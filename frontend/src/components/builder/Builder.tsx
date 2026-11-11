@@ -123,6 +123,68 @@ function BlockRow({ block, selected, invalid, onSelect, onToggle, onRemove }: Ro
   );
 }
 
+// --- preview frame -------------------------------------------------------------
+
+const DESKTOP_WIDTH = 1280;
+
+/**
+ * Desktop: the site is laid out at 1280px and scaled down to the pane, so it looks like a
+ * real screen. Mobile: a 390px frame. Blocks follow their container, so both are faithful.
+ */
+function PreviewFrame({
+  device,
+  onClickCapture,
+  children,
+}: {
+  device: "desktop" | "mobile";
+  onClickCapture: (event: MouseEvent) => void;
+  children: React.ReactNode;
+}) {
+  const outer = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    const node = outer.current;
+    if (!node) return;
+    const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  const scale = device === "desktop" && width ? Math.min(1, width / DESKTOP_WIDTH) : 1;
+  const height = "78vh";
+
+  return (
+    <div ref={outer} className="w-full">
+      <div
+        onClickCapture={onClickCapture}
+        data-testid="builder-preview"
+        className={cn(
+          "overflow-hidden border border-line-2 bg-bg",
+          device === "mobile" ? "mx-auto w-[390px] max-w-full rounded-[28px]" : "rounded-lg",
+        )}
+        style={{ height }}
+      >
+        {device === "desktop" ? (
+          <div
+            className="overflow-y-auto"
+            style={{
+              width: DESKTOP_WIDTH,
+              height: `calc(${height} / ${scale})`,
+              transform: `scale(${scale})`,
+              transformOrigin: "top left",
+            }}
+          >
+            {children}
+          </div>
+        ) : (
+          <div className="h-full overflow-y-auto">{children}</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // --- the builder ----------------------------------------------------------------
 
 type BuilderProps = { initial: Site; emailVerified: boolean };
@@ -307,14 +369,14 @@ export function Builder({ initial, emailVerified }: BuilderProps) {
           <b className="truncate font-display text-lg font-medium">{site.title}</b>
           <span className="label" role="status" aria-live="polite">
             {live ? ru.sites.status.published : t.draft}
-            {" · "}
-            <b className="font-medium text-ink">
-              {changes > 0 && (live || site.published_at)
-                ? t.changes.replace("{n}", String(changes))
-                : live
-                  ? t.noChanges
-                  : t.draft.toLowerCase()}
-            </b>
+            {live && (
+              <>
+                {" · "}
+                <b className="font-medium text-ink">
+                  {changes > 0 ? t.changes.replace("{n}", String(changes)) : t.noChanges}
+                </b>
+              </>
+            )}
             {" · "}
             <span
               className={cn(
@@ -477,20 +539,11 @@ export function Builder({ initial, emailVerified }: BuilderProps) {
               ))}
             </div>
           </div>
-          <div
-            onClickCapture={stopLinks}
-            data-testid="builder-preview"
-            className={cn(
-              "overflow-hidden rounded-lg border border-line-2 bg-bg",
-              device === "mobile" && "mx-auto w-[390px] max-w-full rounded-[28px]",
+          <PreviewFrame device={device} onClickCapture={stopLinks}>
+            {previewPage && (
+              <PublicSite slug={site.slug} content={content} page={previewPage} preview />
             )}
-          >
-            <div className="max-h-[78vh] overflow-y-auto">
-              {previewPage && (
-                <PublicSite slug={site.slug} content={content} page={previewPage} preview />
-              )}
-            </div>
-          </div>
+          </PreviewFrame>
         </div>
       </div>
 

@@ -38,7 +38,7 @@ export function ProfileCard({
       role="img"
       aria-label={[name, role, address].filter(Boolean).join(", ")}
       className={cn(
-        "relative flex aspect-[1.6/1] min-h-[220px] w-full flex-col justify-between overflow-hidden rounded-[24px] border border-line-2 bg-surface p-6 @lg:p-9",
+        "relative flex aspect-[1.6/1] min-h-[220px] w-full max-w-[560px] flex-col justify-between overflow-hidden rounded-[24px] border border-line-2 bg-surface p-6 @lg:p-9",
         "shadow-[0_0_0_1px_color-mix(in_srgb,var(--accent)_35%,transparent),0_30px_80px_-30px_var(--glow)]",
         className,
       )}

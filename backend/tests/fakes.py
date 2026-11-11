@@ -1,9 +1,11 @@
 """In-memory implementations of ports for unit and API tests."""
 
+import copy
 import secrets
 from collections import defaultdict
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
+from typing import Literal
 from uuid import UUID
 
 from dishka import Provider, Scope, provide
@@ -24,6 +26,10 @@ from zxcrunet.plans.domain.repository import PlanRepository
 from zxcrunet.shared.application.clock import Clock
 from zxcrunet.shared.application.rate_limit import RateLimiter
 from zxcrunet.shared.application.uow import UnitOfWork
+from zxcrunet.sites.application.use_cases import ResolvedSite, SiteCache
+from zxcrunet.sites.domain.errors import SlugTakenError
+from zxcrunet.sites.domain.repository import ReservedSlugs, SiteRepository
+from zxcrunet.sites.domain.site import Site, Slug
 
 FREE_PLAN = Plan(
     code=FREE_PLAN_CODE,
@@ -153,6 +159,66 @@ class InMemoryPlans:
         return FREE_PLAN if code == FREE_PLAN_CODE else None
 
 
+class InMemorySites:
+    def __init__(self) -> None:
+        self.by_id: dict[UUID, Site] = {}
+
+    async def get(self, site_id: UUID) -> Site | None:
+        site = self.by_id.get(site_id)
+        return copy.deepcopy(site) if site else None
+
+    async def get_by_slug(self, slug: Slug) -> Site | None:
+        for site in self.by_id.values():
+            if site.slug == slug:
+                return copy.deepcopy(site)
+        return None
+
+    async def list_by_owner(self, owner_id: UUID) -> list[Site]:
+        return [copy.deepcopy(s) for s in self.by_id.values() if s.owner_id == owner_id]
+
+    async def count_by_owner(self, owner_id: UUID) -> int:
+        return sum(1 for s in self.by_id.values() if s.owner_id == owner_id)
+
+    async def slug_exists(self, slug: Slug) -> bool:
+        return any(s.slug == slug for s in self.by_id.values())
+
+    async def add(self, site: Site) -> None:
+        if await self.slug_exists(site.slug):
+            raise SlugTakenError("This address is taken")
+        self.by_id[site.id] = copy.deepcopy(site)
+
+    async def save(self, site: Site) -> None:
+        self.by_id[site.id] = copy.deepcopy(site)
+
+    async def delete(self, site: Site) -> None:
+        self.by_id.pop(site.id, None)
+
+
+class InMemoryReservedSlugs:
+    def __init__(self, names: set[str] | None = None) -> None:
+        self.names = names if names is not None else {"www", "api", "admin", "app"}
+
+    async def is_reserved(self, slug: Slug) -> bool:
+        return slug.value in self.names
+
+
+class InMemorySiteCache:
+    def __init__(self) -> None:
+        self.data: dict[str, ResolvedSite | None] = {}
+        self.invalidated: list[str] = []
+
+    async def get(self, host: str) -> ResolvedSite | Literal[False] | None:
+        return self.data.get(host, False)
+
+    async def set(self, host: str, value: ResolvedSite | None) -> None:
+        self.data[host] = value
+
+    async def invalidate(self, *hosts: str) -> None:
+        self.invalidated.extend(hosts)
+        for host in hosts:
+            self.data.pop(host, None)
+
+
 class Fakes:
     """One set of shared fakes for a test."""
 
@@ -166,6 +232,9 @@ class Fakes:
         self.limiter = InMemoryRateLimiter()
         self.clock = FixedClock()
         self.plans = InMemoryPlans()
+        self.sites = InMemorySites()
+        self.reserved = InMemoryReservedSlugs()
+        self.site_cache = InMemorySiteCache()
 
 
 class FakesProvider(Provider):
@@ -212,3 +281,15 @@ class FakesProvider(Provider):
     @provide
     def plans(self) -> PlanRepository:
         return self.fakes.plans
+
+    @provide
+    def sites(self) -> SiteRepository:
+        return self.fakes.sites
+
+    @provide
+    def reserved(self) -> ReservedSlugs:
+        return self.fakes.reserved
+
+    @provide
+    def site_cache(self) -> SiteCache:
+        return self.fakes.site_cache

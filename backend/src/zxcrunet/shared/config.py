@@ -17,6 +17,8 @@ class Settings(BaseSettings):
 
     env: Environment = Environment.DEV
     service_domain: str = "zxc.ru.net"
+    # Parent domain of free site addresses; `localhost` in development (anna.localhost).
+    sites_domain: str = "zxc.ru.net"
     database_url: str = "postgresql+asyncpg://zxc:zxc@localhost:5432/zxc"
     redis_url: str = "redis://localhost:6379/0"
     probe_timeout_seconds: float = 2.0

@@ -1,28 +1,157 @@
 @import "tailwindcss";
 
-/* Базовые токены из design/Неоновые визитки — редизайн.html.
-   Полный перенос дизайн-системы — этап 1. */
+/*
+ * Дизайн-токены zxcrunet. Источник: design/Неоновые визитки — редизайн.html.
+ * Цвета, зависящие от неона (--accent, --accent-ink, --second, --bg, --surface, --raised, --glow),
+ * переопределяются inline-стилем из lib/theme/palette.ts на любом элементе-обёртке.
+ */
 :root {
   --board: #05070b;
+  --bg: #0a0d14;
+  --surface: #121722;
   --raised: #1a2030;
   --ink: #e9edf3;
+  --ink-2: rgba(233, 237, 243, 0.84);
+  --muted: #8f98a8;
+  --line: rgba(233, 237, 243, 0.1);
   --line-2: rgba(233, 237, 243, 0.18);
   --accent: #5ab9fc;
+  --accent-ink: #0a0d14;
+  --second: #ffb545;
+  --glow: rgba(90, 185, 252, 0.38);
+
+  --gut: 16px;
+  color-scheme: dark;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --gut: 40px;
+  }
+}
+
+@media (min-width: 1280px) {
+  :root {
+    --gut: 80px;
+  }
 }
 
 @theme inline {
   --color-board: var(--board);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
   --color-raised: var(--raised);
   --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
   --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-second: var(--second);
+  --color-glow: var(--glow);
+
   --font-display: var(--font-onest), system-ui, sans-serif;
   --font-sans: var(--font-onest), system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, Consolas, monospace;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-btn: 10px;
+
+  --ease-neon: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  --text-h1: clamp(2.5rem, 1.5rem + 4vw, 4rem);
+  --text-h1--line-height: 1.02;
+  --text-h1--letter-spacing: -0.035em;
+  --text-h2: clamp(1.75rem, 1.25rem + 2vw, 2.5rem);
+  --text-h2--line-height: 1.1;
+  --text-h2--letter-spacing: -0.025em;
+  --text-h3: 1.25rem;
+  --text-h3--line-height: 1.3;
+  --text-h3--letter-spacing: -0.01em;
+  --text-lead: clamp(1.0625rem, 1rem + 0.3vw, 1.1875rem);
+  --text-lead--line-height: 1.6;
+  --text-label: 0.8125rem;
+  --text-label--line-height: 1.4;
+  --text-stat: clamp(1.875rem, 1.5rem + 1vw, 2.375rem);
+  --text-stat--line-height: 1;
+  --text-stat--letter-spacing: -0.03em;
+
+  --animate-enter: enter 0.8s var(--ease-neon) both;
+
+  @keyframes enter {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
 }
 
-body {
-  background: var(--board);
-  color: var(--ink);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
+@layer base {
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 400 16px/1.6 var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+}
+
+@layer components {
+  /* Равные поля слева и справа; ширина контента — до 1440px. */
+  .wrap {
+    width: 100%;
+    max-width: 1440px;
+    margin-inline: auto;
+    padding-inline: var(--gut);
+  }
+
+  .label {
+    font-size: var(--text-label);
+    line-height: var(--text-label--line-height);
+    font-weight: 500;
+    color: var(--muted);
+  }
+
+  /* Появление первого экрана: дети элемента с data-enter въезжают по очереди. */
+  @media (prefers-reduced-motion: no-preference) {
+    [data-enter] > * {
+      animation: var(--animate-enter);
+    }
+    [data-enter] > *:nth-child(2) {
+      animation-delay: 0.08s;
+    }
+    [data-enter] > *:nth-child(3) {
+      animation-delay: 0.16s;
+    }
+    [data-enter] > *:nth-child(4) {
+      animation-delay: 0.24s;
+    }
+    [data-enter] > *:nth-child(5) {
+      animation-delay: 0.32s;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
 }

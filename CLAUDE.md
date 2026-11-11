@@ -63,7 +63,7 @@ frontend/           Next.js
     (marketing)/    лендинг zxc.ru.net
     app/            кабинет пользователя (/app)
     admin/          админка владельца (/admin)
-    _sites/[host]/  рендер опубликованных визиток (сюда переписывает src/proxy.ts)
+    tenant/[host]/  рендер опубликованных визиток (сюда переписывает src/proxy.ts; `_folder` в App Router — приватная папка, поэтому не `_sites`)
   src/blocks/       компоненты блоков: render + editor + схема настроек
 infra/              docker-compose*.yml, Caddyfile, скрипты бэкапа
 design/             HTML-макеты (эталон и архив)
@@ -97,8 +97,8 @@ design/             HTML-макеты (эталон и архив)
 ## Маршрутизация по хосту
 
 - `zxc.ru.net`: лендинг, `/app` (кабинет), `/admin` (только роль `owner`), `/api/*` (Caddy проксирует в FastAPI).
-- `*.zxc.ru.net` и активные пользовательские домены: Next.js proxy (`src/proxy.ts`, в Next 16 так называется бывший middleware) по заголовку `Host` переписывает запрос на `/_sites/[host]/...`. Сайт ищется через API `GET /api/public/sites/resolve?host=` с кэшем в Redis.
-- Неизвестный хост → страница 404 zxcrunet. Сайт со статусом `suspended` → заглушка «Сайт недоступен».
+- `*.zxc.ru.net` и активные пользовательские домены: Next.js proxy (`src/proxy.ts`, в Next 16 так называется бывший middleware) по заголовку `Host` переписывает запрос на `/tenant/[host]/...` (с основного хоста `/tenant` недоступен). Сайт ищется через API `GET /api/public/sites/resolve?host=` с кэшем в Redis.
+- Неизвестный хост и черновик → страница 404 zxcrunet, `suspended` → заглушка «Сайт недоступен» (403). Эти ответы отдаёт сам proxy простым HTML: с Cache Components потоковая страница всегда начинается со статуса 200.
 
 ## Свои домены
 
@@ -152,11 +152,12 @@ design/             HTML-макеты (эталон и архив)
 - Итог: контексты `identity` и `plans`, сессии в Redis, письма через Taskiq (`zxcrunet.worker`), CLI `python -m zxcrunet.cli create-owner`. Фронтенд: `/app/*`, клиент API из `openapi.json` (`pnpm api:types`). Полный e2e — джоб `e2e` в CI (`E2E_FULL=1`).
 - Особенность Next 16: после клиентского перехода прошлая страница остаётся в DOM скрытой (`<Activity>`). В e2e поля ищем с `.filter({ visible: true })`, выход делаем полной перезагрузкой.
 
-### ⬜ Этап 3. Сайты и поддомены
+### ✅ Этап 3. Сайты и поддомены
 - Контекст `sites`: CRUD сайтов с лимитом плана, выбор и проверка slug, зарезервированные имена, страницы, черновик и публикация.
 - Мультитенантный рендер: proxy по `Host`, резолв сайта с кэшем, 404 и заглушка для `suspended`.
 - Локально поддомены работают через `*.localhost`.
 - **Готово, когда:** созданный и опубликованный пустой сайт открывается по `slug.localhost`.
+- Итог: контекст `sites` (снимок черновика при публикации, публикация только с подтверждённой почтой), `GET /api/public/sites/resolve` с кэшем в Redis, `src/proxy.ts` и маршрут `/tenant/[host]`. Переменные: `ZXC_SITES_DOMAIN`, `APP_HOSTS`, `NEXT_PUBLIC_SITE_URL_TEMPLATE`. Скриншоты e2e лежат в артефакте `e2e-shots` в CI.
 
 ### ⬜ Этап 4. Конструктор и бизнес-визитка
 - Реестр блоков: схема настроек (Pydantic и zod), компонент рендера, форма редактора, версия схемы.

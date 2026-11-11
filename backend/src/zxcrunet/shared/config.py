@@ -17,6 +17,8 @@ class Settings(BaseSettings):
 
     env: Environment = Environment.DEV
     service_domain: str = "zxc.ru.net"
+    # Parent domain of free site addresses; `localhost` in development (anna.localhost).
+    sites_domain: str = "zxc.ru.net"
     database_url: str = "postgresql+asyncpg://zxc:zxc@localhost:5432/zxc"
     redis_url: str = "redis://localhost:6379/0"
     probe_timeout_seconds: float = 2.0
@@ -30,6 +32,7 @@ class Settings(BaseSettings):
     session_ttl_days: int = 30
     verify_email_ttl_hours: int = 48
     reset_password_ttl_minutes: int = 60
+    register_per_ip_per_hour: int = 5
 
     smtp_host: str = "localhost"
     smtp_port: int = 1025

@@ -2,48 +2,11 @@
  * Full account journey against the real stack: FastAPI, Taskiq worker, Postgres, Redis, Mailpit.
  * Runs when E2E_FULL=1 (the CI e2e job). Emails are read through the Mailpit API.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
-const MAILPIT = process.env.MAILPIT_URL ?? "http://localhost:8025";
-const PASSWORD = "correct horse battery";
+import { FULL_STACK, PASSWORD, SKIP_REASON, fillCredentials, linkFromEmail } from "./helpers";
 
-test.skip(process.env.E2E_FULL !== "1", "needs backend, worker and Mailpit (E2E_FULL=1)");
-
-type MailpitSummary = { ID: string; Subject: string };
-
-/** Waits for a new email to `to` with a subject containing `subject`, returns its link. */
-async function linkFromEmail(to: string, subject: string): Promise<string> {
-  const query = encodeURIComponent(`to:"${to}" subject:"${subject}"`);
-  let message: MailpitSummary | undefined;
-  await expect
-    .poll(
-      async () => {
-        const res = await fetch(`${MAILPIT}/api/v1/search?query=${query}`);
-        const body = (await res.json()) as { messages: MailpitSummary[] };
-        message = body.messages[0];
-        return message?.ID ?? null;
-      },
-      { timeout: 20_000, message: `email "${subject}" to ${to}` },
-    )
-    .not.toBeNull();
-  const res = await fetch(`${MAILPIT}/api/v1/message/${message!.ID}`);
-  const { Text } = (await res.json()) as { Text: string };
-  const link = Text.match(/https?:\/\/\S+token=\S+/)?.[0];
-  expect(link, "link in the email").toBeTruthy();
-  return link!;
-}
-
-/*
- * Next.js 16 keeps the previous route mounted but hidden (<Activity>) after client navigation,
- * and getByLabel does not skip hidden elements, so form fields are filtered to visible ones.
- */
-async function fillCredentials(page: Page, email: string, password: string) {
-  await page.getByLabel("Почта").filter({ visible: true }).fill(email);
-  await page
-    .getByLabel(/^(Пароль|Новый пароль)$/)
-    .filter({ visible: true })
-    .fill(password);
-}
+test.skip(!FULL_STACK, SKIP_REASON);
 
 test("register → verify email → logout → login → reset password", async ({ page }) => {
   const email = `e2e-${Date.now()}-${Math.floor(Math.random() * 1e6)}@example.com`;

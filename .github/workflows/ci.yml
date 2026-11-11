@@ -109,7 +109,11 @@ jobs:
       ZXC_ALLOWED_ORIGINS: '["http://localhost:3100"]'
       ZXC_SMTP_HOST: localhost
       ZXC_SMTP_PORT: "1025"
+      ZXC_SITES_DOMAIN: localhost
+      ZXC_REGISTER_PER_IP_PER_HOUR: "100"
       API_INTERNAL_URL: http://localhost:8000
+      APP_HOSTS: localhost,127.0.0.1
+      NEXT_PUBLIC_SITE_URL_TEMPLATE: http://{host}:3100
       MAILPIT_URL: http://localhost:8025
       E2E_FULL: "1"
       NEXT_TELEMETRY_DISABLED: "1"
@@ -143,6 +147,14 @@ jobs:
           pnpm build
           pnpm exec playwright install --with-deps chromium
           pnpm e2e
+      - name: Screenshots for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-shots
+          path: frontend/e2e-shots/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Playwright traces
         if: failure()
         uses: actions/upload-artifact@v4

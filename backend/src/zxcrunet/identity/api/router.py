@@ -3,6 +3,7 @@ from http import HTTPStatus
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, Request, Response
 
+from zxcrunet.identity.api.current import session_token
 from zxcrunet.identity.api.schemas import (
     CredentialsIn,
     EmailIn,
@@ -34,10 +35,6 @@ router = APIRouter(prefix="/api/auth", tags=["auth"], route_class=DishkaRoute)
 
 def client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
-
-
-def session_token(request: Request, settings: Settings) -> str | None:
-    return request.cookies.get(settings.session_cookie_name)
 
 
 def _set_session(response: Response, settings: Settings, policy: AuthPolicy, token: str) -> None:

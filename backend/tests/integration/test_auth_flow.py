@@ -4,53 +4,17 @@ import uuid
 from collections.abc import AsyncIterator
 
 import pytest
-from dishka import Provider, Scope, make_async_container
-from dishka.integrations.fastapi import FastapiProvider
-from httpx import ASGITransport, AsyncClient
+from httpx import AsyncClient
 from redis.asyncio import Redis
 
-from tests.fakes import AllowAllRateLimiter, CapturingMailer
-from zxcrunet.identity.application.ports import Mailer
-from zxcrunet.identity.di import IdentityProvider
+from tests.fakes import CapturingMailer
 from zxcrunet.identity.infrastructure.redis_stores import RedisSessionStore
-from zxcrunet.main import create_app
-from zxcrunet.plans.di import PlansProvider
-from zxcrunet.shared.application.rate_limit import RateLimiter
 from zxcrunet.shared.config import Settings
-from zxcrunet.shared.di import InfrastructureProvider
 from zxcrunet.shared.infrastructure.rate_limit import RedisRateLimiter
 
 pytestmark = pytest.mark.integration
 
-ORIGIN = {"Origin": "http://localhost:3000"}
 PASSWORD = "correct horse battery"
-
-
-@pytest.fixture
-def mailer() -> CapturingMailer:
-    return CapturingMailer()
-
-
-@pytest.fixture
-async def client(mailer: CapturingMailer) -> AsyncIterator[AsyncClient]:
-    overrides = Provider(scope=Scope.APP)
-    overrides.provide(lambda: mailer, provides=Mailer)
-    overrides.provide(AllowAllRateLimiter, provides=RateLimiter)
-    settings = Settings()
-    container = make_async_container(
-        InfrastructureProvider(),
-        FastapiProvider(),
-        PlansProvider(),
-        IdentityProvider(),
-        overrides,
-        context={Settings: settings},
-    )
-    app = create_app(container, settings)
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test", headers=ORIGIN
-    ) as c:
-        yield c
-    await container.close()
 
 
 def unique_email() -> str:

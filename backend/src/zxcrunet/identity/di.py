@@ -41,6 +41,7 @@ class IdentityProvider(Provider):
             session_ttl_seconds=settings.session_ttl_days * 24 * 3600,
             verify_email_ttl_seconds=settings.verify_email_ttl_hours * 3600,
             reset_password_ttl_seconds=settings.reset_password_ttl_minutes * 60,
+            register_per_ip_per_hour=settings.register_per_ip_per_hour,
         )
 
     @provide(scope=Scope.APP)

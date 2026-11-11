@@ -31,6 +31,7 @@ class AuthPolicy:
     session_ttl_seconds: int
     verify_email_ttl_seconds: int
     reset_password_ttl_seconds: int
+    register_per_ip_per_hour: int = 5
 
 
 @dataclass(frozen=True, slots=True)
@@ -88,7 +89,12 @@ class _Base:
 
 class RegisterUser(_Base):
     async def __call__(self, cmd: Credentials) -> AuthResult:
-        await enforce(self.limiter, f"register:ip:{cmd.ip}", limit=5, window_seconds=HOUR)
+        await enforce(
+            self.limiter,
+            f"register:ip:{cmd.ip}",
+            limit=self.policy.register_per_ip_per_hour,
+            window_seconds=HOUR,
+        )
         email = Email.parse(cmd.email)
         validate_password(cmd.password, email)
         if await self.users.get_by_email(email) is not None:

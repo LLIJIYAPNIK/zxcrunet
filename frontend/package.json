@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "api:types": "openapi-typescript http://localhost:8000/api/openapi.json -o src/lib/api/schema.d.ts"
+    "api:types": "openapi-typescript http://localhost:8000/api/openapi.json -o src/lib/api/schema.d.ts",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "next": "16.4.6",
@@ -20,6 +21,7 @@
     "react-dom": "19.3.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.0",
     "@tailwindcss/turbopack": "4.3.3",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",

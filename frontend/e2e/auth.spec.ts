@@ -39,7 +39,10 @@ async function linkFromEmail(to: string, subject: string): Promise<string> {
  */
 async function fillCredentials(page: Page, email: string, password: string) {
   await page.getByLabel("Почта").filter({ visible: true }).fill(email);
-  await page.getByLabel(/^(Пароль|Новый пароль).filter({ visible: true })$/).fill(password);
+  await page
+    .getByLabel(/^(Пароль|Новый пароль)$/)
+    .filter({ visible: true })
+    .fill(password);
 }
 
 test("register → verify email → logout → login → reset password", async ({ page }) => {

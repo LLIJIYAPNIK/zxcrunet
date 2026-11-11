@@ -78,8 +78,11 @@ test("assemble, reorder, hide, publish a business card", async ({ page }) => {
   // Keyboard reorder: move «Контакты» above «Цифры».
   const grip = page.getByRole("button", { name: /Перетащите.*Контакты/ });
   await grip.focus();
+  // dnd-kit measures positions and animates between key presses: give it a beat.
   await page.keyboard.press("Space");
+  await page.waitForTimeout(300);
   await page.keyboard.press("ArrowUp");
+  await page.waitForTimeout(300);
   await page.keyboard.press("Space");
   await expect(page.getByRole("list", { name: "Блоки" }).locator("li b")).toHaveText([
     "Шапка",

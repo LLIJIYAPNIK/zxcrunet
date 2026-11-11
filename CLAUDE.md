@@ -127,7 +127,7 @@ design/             HTML-макеты (эталон и архив)
 
 Статусы: ⬜ не начат · 🟨 в работе · ✅ готов. Статус обновляем в этом файле.
 
-### 🟨 Этап 0. Фундамент
+### ✅ Этап 0. Фундамент
 - `git init`, `.gitignore`, монорепо по структуре выше, макеты переносим в `design/`, `pyproject.toml` в `backend/`.
 - `infra/docker-compose.dev.yml`: postgres, redis, mailpit.
 - Бэкенд: каркас FastAPI с dishka, конфигом (pydantic-settings), Alembic, `GET /api/health`, ruff, mypy, pytest.

@@ -20,7 +20,7 @@ from pydantic import (
 from zxcrunet.shared.domain.errors import InvalidInputError
 
 MAX_BLOCKS_PER_PAGE = 40
-SAFE_URL = re.compile(r"^(https?://|mailto:|tg://|#)[^\s<>\"']*$", re.IGNORECASE)
+SAFE_URL = re.compile(r"^(https?://|mailto:|tel:|tg://|#)[^\s<>\"']*$", re.IGNORECASE)
 
 Short = Annotated[str, StringConstraints(strip_whitespace=True, max_length=80)]
 Line = Annotated[str, StringConstraints(strip_whitespace=True, max_length=160)]
@@ -43,7 +43,7 @@ class Link(_Model):
     @classmethod
     def _safe(cls, value: str) -> str:
         if not SAFE_URL.fullmatch(value):
-            msg = "only http(s), mailto, tg links and #anchors are allowed"
+            msg = "only http(s), mailto, tel, tg links and #anchors are allowed"
             raise ValueError(msg)
         return value
 
@@ -133,8 +133,9 @@ class ContactsSettings(_Model):
 
 
 class ResumeSettings(_Model):
-    label: Short
-    file: MediaRef
+    label: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)]
+    #: None until the PDF is uploaded; such a block renders nothing.
+    file: MediaRef | None = None
 
 
 SCHEMAS: dict[str, dict[int, type[_Model]]] = {

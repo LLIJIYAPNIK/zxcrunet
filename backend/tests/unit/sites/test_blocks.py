@@ -51,7 +51,14 @@ def test_unsafe_links_are_rejected(url: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "url", ["https://github.com/anna", "mailto:anna@example.com", "tg://resolve?domain=a", "#b-1"]
+    "url",
+    [
+        "https://github.com/anna",
+        "mailto:anna@example.com",
+        "tel:+79990000000",
+        "tg://resolve?domain=a",
+        "#b-1",
+    ],
 )
 def test_safe_links(url: str) -> None:
     validate_blocks([block("hero", {**HERO, "primary": {"label": "x", "url": url}})])

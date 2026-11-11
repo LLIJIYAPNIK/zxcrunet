@@ -8,7 +8,7 @@ import { FormMessage } from "@/components/auth/AuthShell";
 import { PalettePicker, type PaletteChoice } from "@/components/theme/PalettePicker";
 import { ThemeScope } from "@/components/theme/ThemeScope";
 import { Avatar } from "@/components/ui/Avatar";
-import { Button } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
 import { Field, Input, Textarea } from "@/components/ui/Field";
@@ -211,6 +211,9 @@ export function SiteSettings({ initial, emailVerified }: SiteSettingsProps) {
           )}
         </div>
         <div className="flex flex-wrap gap-3">
+          <ButtonLink href={`/app/sites/${site.id}/editor`} variant="secondary" arrow>
+            {ru.builder.open}
+          </ButtonLink>
           {live && (
             <Button variant="secondary" onClick={unpublish} disabled={busy}>
               {t.publish.unpublish}

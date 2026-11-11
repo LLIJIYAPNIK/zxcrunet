@@ -180,6 +180,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/media": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload */
+        post: operations["upload_api_media_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/public/sites/resolve": {
         parameters: {
             query?: never;
@@ -289,6 +306,23 @@ export interface paths {
         patch: operations["update_page_api_sites__site_id__pages__page_id__patch"];
         trace?: never;
     };
+    "/api/sites/{site_id}/pages/{page_id}/blocks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set Blocks */
+        put: operations["set_blocks_api_sites__site_id__pages__page_id__blocks_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sites/{site_id}/publish": {
         parameters: {
             query?: never;
@@ -327,6 +361,64 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * BlockIn
+         * @description Envelope the editor sends; `settings` is checked against the type's schema.
+         */
+        BlockIn: {
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Settings */
+            settings: {
+                [key: string]: unknown;
+            };
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "hero" | "facts" | "experience" | "projects" | "interests" | "contacts" | "resume";
+            /**
+             * Version
+             * @default 1
+             */
+            version: number;
+        };
+        /** BlockOut */
+        BlockOut: {
+            /** Hidden */
+            hidden: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Settings */
+            settings: {
+                [key: string]: unknown;
+            };
+            /** Type */
+            type: string;
+            /** Version */
+            version: number;
+        };
+        /** Body_upload_api_media_post */
+        Body_upload_api_media_post: {
+            /** File */
+            file: string;
+            /**
+             * Purpose
+             * @enum {string}
+             */
+            purpose: "image" | "resume";
+        };
         /** CreatePageIn */
         CreatePageIn: {
             /** Path */
@@ -391,8 +483,33 @@ export interface components {
             limits: components["schemas"]["LimitsOut"];
             user: components["schemas"]["UserOut"];
         };
+        /** MediaOut */
+        MediaOut: {
+            /** Height */
+            height: number | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "image" | "document";
+            /** Mime */
+            mime: string;
+            /** Size */
+            size: number;
+            /** Url */
+            url: string;
+            /** Width */
+            width: number | null;
+        };
         /** PageOut */
         PageOut: {
+            /** Blocks */
+            blocks: components["schemas"]["BlockOut"][];
             /** Blocks Count */
             blocks_count: number;
             /**
@@ -474,6 +591,11 @@ export interface components {
              */
             status: "published" | "suspended";
         };
+        /** SetBlocksIn */
+        SetBlocksIn: {
+            /** Blocks */
+            blocks: components["schemas"]["BlockIn"][];
+        };
         /** SiteOut */
         SiteOut: {
             /**
@@ -513,6 +635,8 @@ export interface components {
             theme: components["schemas"]["ThemeOut"];
             /** Title */
             title: string;
+            /** Unpublished Changes */
+            unpublished_changes: number;
             /** Updated At */
             updated_at: string | null;
         };
@@ -549,6 +673,8 @@ export interface components {
             theme: components["schemas"]["ThemeOut"];
             /** Title */
             title: string;
+            /** Unpublished Changes */
+            unpublished_changes: number;
             /** Updated At */
             updated_at: string | null;
         };
@@ -916,6 +1042,39 @@ export interface operations {
             };
         };
     };
+    upload_api_media_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_api_media_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     resolve_site_api_public_sites_resolve_get: {
         parameters: {
             query: {
@@ -1204,6 +1363,42 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["UpdatePageIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_blocks_api_sites__site_id__pages__page_id__blocks_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+                page_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetBlocksIn"];
             };
         };
         responses: {

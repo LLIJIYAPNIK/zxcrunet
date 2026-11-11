@@ -230,11 +230,11 @@ async def test_blocks_reject_foreign_media_and_bad_settings(
             ]
         },
     )
-    invalid = await client.put(url, json={"blocks": [{**base, "settings": {"label": "Резюме"}}]})
+    invalid = await client.put(url, json={"blocks": [{**base, "settings": {"label": ""}}]})
 
     assert (foreign.status_code, foreign.json()["error"]["code"]) == (404, "media_not_found")
     assert (invalid.status_code, invalid.json()["error"]["code"]) == (422, "invalid_block")
-    assert invalid.json()["error"]["details"]["errors"][0]["loc"] == ["file"]
+    assert invalid.json()["error"]["details"]["errors"][0]["loc"] == ["label"]
 
 
 async def test_upload_rejects_svg(client: AsyncClient, fakes: Fakes) -> None:

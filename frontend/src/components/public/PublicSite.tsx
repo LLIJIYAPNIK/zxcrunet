@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { CWRAP, Blocks } from "@/blocks/renderers";
+import { META, anchorId, type AnyBlock } from "@/blocks/schemas";
 import { MadeWith } from "@/components/brand/MadeWith";
 import { ThemeScope } from "@/components/theme/ThemeScope";
 import { SERVICE_DOMAIN } from "@/config/site";
@@ -14,23 +16,55 @@ type PublicSiteProps = {
   slug: string;
   content: Content;
   page: PublicPage;
+  /** Editor preview: links do not leave the editor, no entrance animation. */
+  preview?: boolean;
 };
 
 function href(path: string): string {
   return path ? `/${path}` : "/";
 }
 
-/** A published card: address bar, page nav, the page's blocks, «Сделано на zxcrunet». */
-export function PublicSite({ slug, content, page }: PublicSiteProps) {
+type NavItem = { href: string; label: string; current?: boolean };
+
+function navItems(content: Content, page: PublicPage, blocks: readonly AnyBlock[]): NavItem[] {
+  if (content.pages.length > 1) {
+    return content.pages.map((p) => ({
+      href: href(p.path),
+      label: p.title,
+      current: p.path === page.path,
+    }));
+  }
+  return blocks
+    .filter((b) => !b.hidden)
+    .flatMap((b) => {
+      const label = (META[b.type]?.navLabel as ((s: unknown) => string | null) | undefined)?.(
+        b.settings,
+      );
+      return label ? [{ href: `#${anchorId(b)}`, label }] : [];
+    });
+}
+
+/** A published card: address bar, navigation, blocks, «Сделано на zxcrunet». */
+export function PublicSite({ slug, content, page, preview = false }: PublicSiteProps) {
   const t = ru.publicSite;
+  const blocks = page.blocks as unknown as AnyBlock[];
+  const visible = blocks.filter((b) => !b.hidden);
+  const nav = navItems(content, page, blocks);
+  const address = `${slug}.${SERVICE_DOMAIN}`;
+
   return (
     <ThemeScope
       accent={content.theme.accent}
       second={content.theme.second ?? undefined}
-      className="flex min-h-full flex-1 flex-col bg-bg text-ink"
+      className="@container flex min-h-full flex-1 flex-col bg-bg text-ink"
     >
       <header className="border-b border-line">
-        <div className="wrap flex min-h-16 flex-wrap items-center justify-between gap-x-6 gap-y-2 py-3 sm:min-h-[72px]">
+        <div
+          className={cn(
+            CWRAP,
+            "flex min-h-16 flex-wrap items-center justify-between gap-x-6 gap-y-2 py-3 @3xl:min-h-[72px]",
+          )}
+        >
           <Link href="/" className="flex items-center gap-2.5 font-mono text-[15px] font-medium">
             <span
               aria-hidden="true"
@@ -45,24 +79,26 @@ export function PublicSite({ slug, content, page }: PublicSiteProps) {
                 />
               </svg>
             </span>
-            {slug}
-            <span className="text-muted">.{SERVICE_DOMAIN}</span>
+            <span>
+              {slug}
+              <span className="text-muted">.{SERVICE_DOMAIN}</span>
+            </span>
           </Link>
-          {content.pages.length > 1 && (
-            <nav aria-label={content.title}>
+          {nav.length > 0 && (
+            <nav aria-label={content.title} className="@max-3xl:hidden">
               <ul className="flex flex-wrap gap-x-7 gap-y-1">
-                {content.pages.map((p) => (
-                  <li key={p.path}>
-                    <Link
-                      href={href(p.path)}
-                      aria-current={p.path === page.path ? "page" : undefined}
+                {nav.map((item) => (
+                  <li key={item.href}>
+                    <a
+                      href={item.href}
+                      aria-current={item.current ? "page" : undefined}
                       className={cn(
-                        "relative py-2 text-[15px] font-medium transition-colors hover:text-ink",
-                        p.path === page.path ? "text-ink" : "text-ink-2",
+                        "relative py-2 text-[15px] font-medium transition-colors after:absolute after:inset-x-0 after:bottom-0.5 after:h-px after:origin-left after:scale-x-0 after:bg-current after:transition-transform after:duration-300 after:ease-neon hover:text-ink hover:after:scale-x-100",
+                        item.current ? "text-ink" : "text-ink-2",
                       )}
                     >
-                      {p.title}
-                    </Link>
+                      {item.label}
+                    </a>
                   </li>
                 ))}
               </ul>
@@ -71,24 +107,28 @@ export function PublicSite({ slug, content, page }: PublicSiteProps) {
         </div>
       </header>
 
-      <main className="wrap flex flex-1 flex-col py-16 lg:py-24">
-        {page.blocks.length === 0 ? (
-          <div className="flex flex-col gap-4" data-enter>
+      <main className={cn("flex flex-1 flex-col", preview && "[&_[data-enter]>*]:animate-none")}>
+        {visible.length === 0 ? (
+          <div className={cn(CWRAP, "flex flex-col gap-4 py-16 @3xl:py-24")} data-enter>
             {page.path && <span className="label">{page.title}</span>}
-            <h1 className="font-display text-h1 font-medium">{content.title}</h1>
-            <div className="mt-6 max-w-xl rounded-lg border border-dashed border-line-2 p-6 sm:p-8">
+            <h1 className="font-display text-ch1 font-medium">{content.title}</h1>
+            <div className="mt-6 max-w-xl rounded-lg border border-dashed border-line-2 p-6 @lg:p-8">
               <p className="font-display text-h3 font-medium">{t.empty}</p>
               <p className="mt-2 text-ink-2">{t.emptyLead}</p>
             </div>
           </div>
         ) : (
-          // Blocks are rendered in stage 4 (block registry).
-          <h1 className="font-display text-h1 font-medium">{content.title}</h1>
+          <Blocks blocks={visible} ctx={{ address, siteTitle: content.title }} />
         )}
       </main>
 
       <footer className="border-t border-line">
-        <div className="wrap flex min-h-[88px] flex-wrap items-center justify-between gap-4 py-6 text-sm text-muted">
+        <div
+          className={cn(
+            CWRAP,
+            "flex min-h-[88px] flex-wrap items-center justify-between gap-4 py-6 text-sm text-muted",
+          )}
+        >
           <span>{content.title}</span>
           <MadeWith />
         </div>

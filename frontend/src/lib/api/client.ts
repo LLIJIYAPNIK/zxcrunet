@@ -21,7 +21,7 @@ export type ApiErrorBody = {
 export type ApiResult<T> =
   { ok: true; status: number; data: T } | { ok: false; status: number; error: ApiErrorBody };
 
-type Method = "get" | "post" | "patch" | "delete";
+type Method = "get" | "post" | "put" | "patch" | "delete";
 
 type PathFor<M extends Method> = {
   [P in keyof paths]: paths[P] extends Record<M, infer Op>
@@ -119,6 +119,8 @@ export const api = {
     call("get", path, opts[0] as Parameters<typeof call>[2]),
   post: <P extends PathFor<"post">>(path: P, ...opts: OptionalArg<Operation<"post", P>>) =>
     call("post", path, opts[0] as Parameters<typeof call>[2]),
+  put: <P extends PathFor<"put">>(path: P, ...opts: OptionalArg<Operation<"put", P>>) =>
+    call("put", path, opts[0] as Parameters<typeof call>[2]),
   patch: <P extends PathFor<"patch">>(path: P, ...opts: OptionalArg<Operation<"patch", P>>) =>
     call("patch", path, opts[0] as Parameters<typeof call>[2]),
   delete: <P extends PathFor<"delete">>(path: P, ...opts: OptionalArg<Operation<"delete", P>>) =>

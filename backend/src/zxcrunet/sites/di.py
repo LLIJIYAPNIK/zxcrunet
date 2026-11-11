@@ -13,6 +13,7 @@ from zxcrunet.sites.application.use_cases import (
     ListMySites,
     PublishSite,
     ResolveSite,
+    SetPageBlocks,
     SiteCache,
     SitesConfig,
     UnpublishSite,
@@ -57,5 +58,6 @@ class SitesProvider(Provider):
         UpdatePage,
         DeletePage,
         ResolveSite,
+        SetPageBlocks,
         scope=Scope.REQUEST,
     )

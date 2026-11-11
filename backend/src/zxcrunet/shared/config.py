@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     reset_password_ttl_minutes: int = 60
     register_per_ip_per_hour: int = 5
 
+    # Uploaded files: local disk behind FileStorage; served at media_url_prefix.
+    media_root: str = "./data/uploads"
+    media_url_prefix: str = "/media"
+
     smtp_host: str = "localhost"
     smtp_port: int = 1025
     smtp_username: str | None = None

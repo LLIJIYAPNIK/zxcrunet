@@ -9,6 +9,7 @@ from tests.fakes import AllowAllRateLimiter, CapturingMailer
 from zxcrunet.identity.application.ports import Mailer
 from zxcrunet.identity.di import IdentityProvider
 from zxcrunet.main import create_app
+from zxcrunet.media.di import MediaProvider
 from zxcrunet.plans.di import PlansProvider
 from zxcrunet.shared.application.rate_limit import RateLimiter
 from zxcrunet.shared.config import Settings
@@ -35,6 +36,7 @@ async def client(mailer: CapturingMailer) -> AsyncIterator[AsyncClient]:
         FastapiProvider(),
         PlansProvider(),
         IdentityProvider(),
+        MediaProvider(),
         SitesProvider(),
         overrides,
         context={Settings: settings},

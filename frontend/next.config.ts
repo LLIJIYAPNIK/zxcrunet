@@ -18,7 +18,11 @@ const nextConfig: NextConfig = {
    * In production Caddy routes `/api` to FastAPI before Next.js; locally this rewrite does it.
    */
   async rewrites() {
-    return [{ source: "/api/:path*", destination: `${API_INTERNAL_URL}/api/:path*` }];
+    return [
+      { source: "/api/:path*", destination: `${API_INTERNAL_URL}/api/:path*` },
+      // Uploaded files (avatars, resumes); in production Caddy serves them directly.
+      { source: "/media/:path*", destination: `${API_INTERNAL_URL}/media/:path*` },
+    ];
   },
 };
 

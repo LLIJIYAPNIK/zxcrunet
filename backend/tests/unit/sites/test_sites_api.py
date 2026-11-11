@@ -8,6 +8,7 @@ from httpx import ASGITransport, AsyncClient
 from tests.fakes import Fakes, FakesProvider
 from zxcrunet.identity.di import IdentityProvider
 from zxcrunet.main import create_app
+from zxcrunet.media.di import MediaProvider
 from zxcrunet.plans.di import PlansProvider
 from zxcrunet.shared.config import Settings
 from zxcrunet.shared.di import InfrastructureProvider
@@ -30,6 +31,7 @@ async def client(fakes: Fakes) -> AsyncIterator[AsyncClient]:
         FastapiProvider(),
         PlansProvider(),
         IdentityProvider(),
+        MediaProvider(),
         SitesProvider(),
         FakesProvider(fakes),
         context={Settings: settings},
@@ -144,3 +146,104 @@ async def test_update_pages_and_delete(client: AsyncClient, fakes: Fakes) -> Non
     assert removed.status_code == 204
     assert deleted.status_code == 204
     assert (await client.get(f"/api/sites/{site_id}")).status_code == 404
+
+
+def png_bytes() -> bytes:
+    import io  # noqa: PLC0415
+
+    from PIL import Image  # noqa: PLC0415
+
+    out = io.BytesIO()
+    Image.new("RGB", (8, 8), (255, 79, 139)).save(out, format="PNG")
+    return out.getvalue()
+
+
+async def new_site(client: AsyncClient) -> tuple[str, str]:
+    site = (
+        await client.post("/api/sites", json={"kind": "business", "slug": "anna", "title": "Анна"})
+    ).json()
+    return site["id"], site["pages"][0]["id"]
+
+
+async def test_upload_and_use_media_in_blocks(client: AsyncClient, fakes: Fakes) -> None:
+    await signed_in(client, fakes)
+    site_id, page_id = await new_site(client)
+
+    uploaded = await client.post(
+        "/api/media",
+        files={"file": ("me.png", png_bytes(), "image/png")},
+        data={"purpose": "image"},
+    )
+    media = uploaded.json()
+    blocks = [
+        {
+            "id": "0195f3a0-0000-7000-8000-000000000001",
+            "type": "hero",
+            "settings": {
+                "title": "Анна Волкова",
+                "avatar": {"id": media["id"], "url": media["url"]},
+            },
+        },
+        {
+            "id": "0195f3a0-0000-7000-8000-000000000002",
+            "type": "facts",
+            "hidden": True,
+            "settings": {"items": [{"value": "22", "label": "конференции"}]},
+        },
+    ]
+    saved = await client.put(
+        f"/api/sites/{site_id}/pages/{page_id}/blocks", json={"blocks": blocks}
+    )
+    site = (await client.get(f"/api/sites/{site_id}")).json()
+
+    assert uploaded.status_code == 201
+    assert media["mime"] == "image/webp"
+    assert media["url"].startswith("/media/")
+    assert saved.status_code == 200
+    assert [b["type"] for b in saved.json()["blocks"]] == ["hero", "facts"]
+    assert site["pages"][0]["blocks"][1]["hidden"] is True
+    assert site["unpublished_changes"] == site["unpublished_changes"] > 0
+
+
+async def test_blocks_reject_foreign_media_and_bad_settings(
+    client: AsyncClient, fakes: Fakes
+) -> None:
+    await signed_in(client, fakes)
+    site_id, page_id = await new_site(client)
+    url = f"/api/sites/{site_id}/pages/{page_id}/blocks"
+    base = {"id": "0195f3a0-0000-7000-8000-000000000003", "type": "resume"}
+
+    foreign = await client.put(
+        url,
+        json={
+            "blocks": [
+                {
+                    **base,
+                    "settings": {
+                        "label": "Резюме",
+                        "file": {
+                            "id": "0195f3a0-0000-7000-8000-00000000ffff",
+                            "url": "/media/x.pdf",
+                        },
+                    },
+                }
+            ]
+        },
+    )
+    invalid = await client.put(url, json={"blocks": [{**base, "settings": {"label": ""}}]})
+
+    assert (foreign.status_code, foreign.json()["error"]["code"]) == (404, "media_not_found")
+    assert (invalid.status_code, invalid.json()["error"]["code"]) == (422, "invalid_block")
+    assert invalid.json()["error"]["details"]["errors"][0]["loc"] == ["label"]
+
+
+async def test_upload_rejects_svg(client: AsyncClient, fakes: Fakes) -> None:
+    await signed_in(client, fakes)
+
+    response = await client.post(
+        "/api/media",
+        files={"file": ("x.svg", b"<svg xmlns='http://www.w3.org/2000/svg'/>", "image/svg+xml")},
+        data={"purpose": "image"},
+    )
+
+    assert (response.status_code, response.json()["error"]["code"]) == (422, "unsupported_file")

@@ -4,11 +4,9 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy.engine import Connection
 
+import zxcrunet.models  # noqa: F401 — registers every table on Base.metadata
 from zxcrunet.shared.config import Settings
 from zxcrunet.shared.infrastructure.db import Base, create_engine
-
-# Import every context's SQLAlchemy models here so autogenerate can see them.
-# from zxcrunet.identity.infrastructure import models as identity_models
 
 config = context.config
 if config.config_file_name is not None:

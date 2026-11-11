@@ -4,12 +4,17 @@ from dishka import Provider, Scope, from_context, provide
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
+from zxcrunet.shared.application.clock import Clock, SystemClock
+from zxcrunet.shared.application.rate_limit import RateLimiter
+from zxcrunet.shared.application.uow import UnitOfWork
 from zxcrunet.shared.config import Settings
 from zxcrunet.shared.infrastructure.db import create_engine
+from zxcrunet.shared.infrastructure.rate_limit import RedisRateLimiter
+from zxcrunet.shared.infrastructure.uow import SqlAlchemyUnitOfWork
 
 
 class InfrastructureProvider(Provider):
-    """Shared infrastructure: settings, database and Redis connections."""
+    """Shared infrastructure: settings, database, Redis, clock, rate limiting."""
 
     settings = from_context(provides=Settings, scope=Scope.APP)
 
@@ -30,8 +35,20 @@ class InfrastructureProvider(Provider):
         async with factory() as session:
             yield session
 
+    @provide(scope=Scope.REQUEST)
+    def uow(self, session: AsyncSession) -> UnitOfWork:
+        return SqlAlchemyUnitOfWork(session)
+
     @provide(scope=Scope.APP)
     async def redis(self, settings: Settings) -> AsyncIterator[Redis]:
         client = Redis.from_url(settings.redis_url)
         yield client
         await client.aclose()
+
+    @provide(scope=Scope.APP)
+    def rate_limiter(self, redis: Redis) -> RateLimiter:
+        return RedisRateLimiter(redis)
+
+    @provide(scope=Scope.APP)
+    def clock(self) -> Clock:
+        return SystemClock()

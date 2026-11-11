@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
-from zxcrunet.shared.errors import NotFoundError, register_error_handlers
+from zxcrunet.shared.api.errors import register_error_handlers
+from zxcrunet.shared.domain.errors import NotFoundError
 
 
 def make_client() -> AsyncClient:

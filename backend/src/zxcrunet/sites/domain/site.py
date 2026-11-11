@@ -204,6 +204,20 @@ class Site:
         self._touch(now)
         return page
 
+    def set_blocks(self, page_id: UUID, blocks: list[Block], now: datetime) -> Page:
+        """Replace a page's blocks (already validated by the application layer)."""
+        page = self.page(page_id)
+        page.blocks = [dict(b) for b in blocks]
+        self._touch(now)
+        return page
+
+    @property
+    def unpublished_changes(self) -> int:
+        """Saved edits since the last publish (0 when the public version is current)."""
+        if self.published_revision is None:
+            return self.revision
+        return self.revision - self.published_revision
+
     def remove_page(self, page_id: UUID, now: datetime) -> None:
         page = self.page(page_id)
         if page.is_home:
@@ -226,7 +240,12 @@ class Site:
             "theme": {"accent": self.theme.accent, "second": self.theme.second},
             "seo": {"title": self.seo_title, "description": self.seo_description},
             "pages": [
-                {"path": p.path, "title": p.title, "blocks": list(p.blocks)}
+                {
+                    "path": p.path,
+                    "title": p.title,
+                    # Hidden blocks never leave the draft.
+                    "blocks": [b for b in p.blocks if not b.get("hidden")],
+                }
                 for p in sorted(self.pages, key=lambda p: p.position)
             ],
         }

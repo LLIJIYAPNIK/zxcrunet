@@ -1,6 +1,111 @@
 {
   "components": {
     "schemas": {
+      "BlockIn": {
+        "additionalProperties": false,
+        "description": "Envelope the editor sends; `settings` is checked against the type's schema.",
+        "properties": {
+          "hidden": {
+            "default": false,
+            "title": "Hidden",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "settings": {
+            "additionalProperties": true,
+            "title": "Settings",
+            "type": "object"
+          },
+          "type": {
+            "enum": [
+              "hero",
+              "facts",
+              "experience",
+              "projects",
+              "interests",
+              "contacts",
+              "resume"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "version": {
+            "default": 1,
+            "minimum": 1.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "settings"
+        ],
+        "title": "BlockIn",
+        "type": "object"
+      },
+      "BlockOut": {
+        "properties": {
+          "hidden": {
+            "title": "Hidden",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "settings": {
+            "additionalProperties": true,
+            "title": "Settings",
+            "type": "object"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "version",
+          "hidden",
+          "settings"
+        ],
+        "title": "BlockOut",
+        "type": "object"
+      },
+      "Body_upload_api_media_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          },
+          "purpose": {
+            "enum": [
+              "image",
+              "resume"
+            ],
+            "title": "Purpose",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file",
+          "purpose"
+        ],
+        "title": "Body_upload_api_media_post",
+        "type": "object"
+      },
       "CreatePageIn": {
         "properties": {
           "path": {
@@ -165,8 +270,77 @@
         "title": "MeOut",
         "type": "object"
       },
+      "MediaOut": {
+        "properties": {
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "image",
+              "document"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "mime": {
+            "title": "Mime",
+            "type": "string"
+          },
+          "size": {
+            "title": "Size",
+            "type": "integer"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
+          }
+        },
+        "required": [
+          "id",
+          "url",
+          "kind",
+          "mime",
+          "size",
+          "width",
+          "height"
+        ],
+        "title": "MediaOut",
+        "type": "object"
+      },
       "PageOut": {
         "properties": {
+          "blocks": {
+            "items": {
+              "$ref": "#/components/schemas/BlockOut"
+            },
+            "title": "Blocks",
+            "type": "array"
+          },
           "blocks_count": {
             "title": "Blocks Count",
             "type": "integer"
@@ -194,7 +368,8 @@
           "path",
           "title",
           "position",
-          "blocks_count"
+          "blocks_count",
+          "blocks"
         ],
         "title": "PageOut",
         "type": "object"
@@ -371,6 +546,23 @@
         "title": "ResolvedSiteOut",
         "type": "object"
       },
+      "SetBlocksIn": {
+        "properties": {
+          "blocks": {
+            "items": {
+              "$ref": "#/components/schemas/BlockIn"
+            },
+            "maxItems": 40,
+            "title": "Blocks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "blocks"
+        ],
+        "title": "SetBlocksIn",
+        "type": "object"
+      },
       "SiteOut": {
         "properties": {
           "created_at": {
@@ -446,6 +638,10 @@
             "title": "Title",
             "type": "string"
           },
+          "unpublished_changes": {
+            "title": "Unpublished Changes",
+            "type": "integer"
+          },
           "updated_at": {
             "anyOf": [
               {
@@ -468,6 +664,7 @@
           "status",
           "theme",
           "has_unpublished_changes",
+          "unpublished_changes",
           "created_at",
           "updated_at",
           "published_at",
@@ -538,6 +735,10 @@
             "title": "Title",
             "type": "string"
           },
+          "unpublished_changes": {
+            "title": "Unpublished Changes",
+            "type": "integer"
+          },
           "updated_at": {
             "anyOf": [
               {
@@ -560,6 +761,7 @@
           "status",
           "theme",
           "has_unpublished_changes",
+          "unpublished_changes",
           "created_at",
           "updated_at",
           "published_at"
@@ -1157,6 +1359,47 @@
         ]
       }
     },
+    "/api/media": {
+      "post": {
+        "operationId": "upload_api_media_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_api_media_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload",
+        "tags": [
+          "media"
+        ]
+      }
+    },
     "/api/public/sites/resolve": {
       "get": {
         "description": "Which published site lives at `host`. 404 for unknown hosts and drafts.",
@@ -1587,6 +1830,69 @@
           }
         },
         "summary": "Update Page",
+        "tags": [
+          "sites"
+        ]
+      }
+    },
+    "/api/sites/{site_id}/pages/{page_id}/blocks": {
+      "put": {
+        "operationId": "set_blocks_api_sites__site_id__pages__page_id__blocks_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "site_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Site Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "page_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Page Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetBlocksIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Blocks",
         "tags": [
           "sites"
         ]

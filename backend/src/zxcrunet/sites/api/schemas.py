@@ -4,6 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from zxcrunet.sites.application.blocks import MAX_BLOCKS_PER_PAGE, BlockIn
 from zxcrunet.sites.application.use_cases import ResolvedSite, SlugCheck
 from zxcrunet.sites.domain.site import Page, Site
 
@@ -41,12 +42,25 @@ class ThemeOut(BaseModel):
     second: str | None
 
 
+class BlockOut(BaseModel):
+    id: UUID
+    type: str
+    version: int
+    hidden: bool
+    settings: dict[str, Any]
+
+
+class SetBlocksIn(BaseModel):
+    blocks: list[BlockIn] = Field(max_length=MAX_BLOCKS_PER_PAGE)
+
+
 class PageOut(BaseModel):
     id: UUID
     path: str
     title: str
     position: int
     blocks_count: int
+    blocks: list[BlockOut]
 
     @classmethod
     def of(cls, page: Page) -> "PageOut":
@@ -56,6 +70,7 @@ class PageOut(BaseModel):
             title=page.title,
             position=page.position,
             blocks_count=len(page.blocks),
+            blocks=[BlockOut.model_validate(b) for b in page.blocks],
         )
 
 
@@ -68,6 +83,7 @@ class SiteSummaryOut(BaseModel):
     status: Status
     theme: ThemeOut
     has_unpublished_changes: bool
+    unpublished_changes: int
     created_at: datetime
     updated_at: datetime | None
     published_at: datetime | None
@@ -83,6 +99,7 @@ class SiteSummaryOut(BaseModel):
             status=site.status.value,
             theme=ThemeOut(accent=site.theme.accent, second=site.theme.second),
             has_unpublished_changes=site.has_unpublished_changes,
+            unpublished_changes=site.unpublished_changes,
             created_at=site.created_at,
             updated_at=site.updated_at,
             published_at=site.published_at,

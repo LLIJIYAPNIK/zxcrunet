@@ -12,6 +12,7 @@ from zxcrunet.sites.api.schemas import (
     CreateSiteIn,
     PageOut,
     ResolvedSiteOut,
+    SetBlocksIn,
     SiteOut,
     SitesListOut,
     SiteSummaryOut,
@@ -32,6 +33,7 @@ from zxcrunet.sites.application.use_cases import (
     NewSite,
     PublishSite,
     ResolveSite,
+    SetPageBlocks,
     SiteChanges,
     SitesConfig,
     UnpublishSite,
@@ -194,6 +196,20 @@ async def delete_page(
     settings: FromDishka[Settings],
 ) -> None:
     await use_case(await _actor(request, get_current, settings), site_id, page_id)
+
+
+@router.put("/{site_id}/pages/{page_id}/blocks")
+async def set_blocks(
+    site_id: UUID,
+    page_id: UUID,
+    body: SetBlocksIn,
+    request: Request,
+    use_case: FromDishka[SetPageBlocks],
+    get_current: FromDishka[GetCurrentUser],
+    settings: FromDishka[Settings],
+) -> PageOut:
+    actor = await _actor(request, get_current, settings)
+    return PageOut.of(await use_case(actor, site_id, page_id, body.blocks))
 
 
 @public_router.get("/sites/resolve")

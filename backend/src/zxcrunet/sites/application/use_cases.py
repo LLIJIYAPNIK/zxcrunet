@@ -4,10 +4,12 @@ from dataclasses import dataclass
 from typing import Any, Literal, Protocol
 from uuid import UUID
 
+from zxcrunet.media.application.use_cases import MediaService
 from zxcrunet.plans.application.service import PlanService
 from zxcrunet.shared.application.clock import Clock
 from zxcrunet.shared.application.uow import UnitOfWork
 from zxcrunet.shared.domain.errors import AppError
+from zxcrunet.sites.application.blocks import BlockIn, media_ids, validate_blocks
 from zxcrunet.sites.domain.errors import SiteNotFoundError, SlugReservedError, SlugTakenError
 from zxcrunet.sites.domain.repository import ReservedSlugs, SiteRepository
 from zxcrunet.sites.domain.site import Page, Site, SiteKind, SiteStatus, Slug, Theme
@@ -241,6 +243,34 @@ class DeletePage(_Base):
         site = await self._own(actor, site_id)
         site.remove_page(page_id, self.clock.now())
         await self._save(site)
+
+
+class SetPageBlocks(_Base):
+    """Autosave target of the editor: the whole ordered list of a page's blocks."""
+
+    def __init__(
+        self,
+        sites: SiteRepository,
+        reserved: ReservedSlugs,
+        plans: PlanService,
+        uow: UnitOfWork,
+        clock: Clock,
+        cache: SiteCache,
+        config: SitesConfig,
+        media: MediaService,
+    ) -> None:
+        super().__init__(sites, reserved, plans, uow, clock, cache, config)
+        self.media = media
+
+    async def __call__(
+        self, actor: Actor, site_id: UUID, page_id: UUID, blocks: list[BlockIn]
+    ) -> Page:
+        site = await self._own(actor, site_id)
+        clean = validate_blocks(blocks)
+        await self.media.ensure_owned(actor.user_id, media_ids(clean))
+        page = site.set_blocks(page_id, clean, self.clock.now())
+        await self._save(site)
+        return page
 
 
 class ResolveSite(_Base):

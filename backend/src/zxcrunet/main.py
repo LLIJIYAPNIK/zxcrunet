@@ -1,13 +1,17 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from dishka import AsyncContainer, make_async_container
 from dishka.integrations.fastapi import FastapiProvider, setup_dishka
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from zxcrunet import __version__
 from zxcrunet.identity.api.router import router as auth_router
 from zxcrunet.identity.di import IdentityProvider
+from zxcrunet.media.api.router import router as media_router
+from zxcrunet.media.di import MediaProvider
 from zxcrunet.plans.di import PlansProvider
 from zxcrunet.shared.api.errors import register_error_handlers
 from zxcrunet.shared.api.origin import OriginCheckMiddleware
@@ -27,6 +31,7 @@ def make_container(settings: Settings) -> AsyncContainer:
         SystemProvider(),
         PlansProvider(),
         IdentityProvider(),
+        MediaProvider(),
         SitesProvider(),
         context={Settings: settings},
     )
@@ -58,5 +63,10 @@ def create_app(
     app.include_router(auth_router)
     app.include_router(sites_router)
     app.include_router(sites_public_router)
+    app.include_router(media_router)
+    # Uploaded files. In production Caddy serves this folder directly.
+    media_root = Path(settings.media_root)
+    media_root.mkdir(parents=True, exist_ok=True)
+    app.mount(settings.media_url_prefix, StaticFiles(directory=media_root), name="media")
     setup_dishka(container, app)
     return app

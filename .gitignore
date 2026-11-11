@@ -31,3 +31,6 @@ next-env.d.ts
 
 # data
 /data/
+
+# загруженные файлы (FileStorage)
+/backend/data/

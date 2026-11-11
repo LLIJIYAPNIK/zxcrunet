@@ -21,6 +21,8 @@ from zxcrunet.identity.application.ports import (
 from zxcrunet.identity.domain.errors import EmailTakenError
 from zxcrunet.identity.domain.repository import UserRepository
 from zxcrunet.identity.domain.user import Email, User
+from zxcrunet.media.application.use_cases import FileStorage, ImageProcessor, ProcessedImage
+from zxcrunet.media.domain.media import MediaFile, MediaRepository
 from zxcrunet.plans.domain.plan import FREE_PLAN_CODE, Plan
 from zxcrunet.plans.domain.repository import PlanRepository
 from zxcrunet.shared.application.clock import Clock
@@ -219,6 +221,33 @@ class InMemorySiteCache:
             self.data.pop(host, None)
 
 
+class InMemoryMedia:
+    def __init__(self) -> None:
+        self.by_id: dict[UUID, MediaFile] = {}
+
+    async def add(self, media: MediaFile) -> None:
+        self.by_id[media.id] = media
+
+    async def owned_ids(self, owner_id: UUID, ids: set[UUID]) -> set[UUID]:
+        return {i for i in ids if i in self.by_id and self.by_id[i].owner_id == owner_id}
+
+
+class InMemoryStorage:
+    def __init__(self) -> None:
+        self.files: dict[str, bytes] = {}
+
+    async def save(self, key: str, data: bytes, content_type: str) -> None:
+        self.files[key] = data
+
+    def public_url(self, key: str) -> str:
+        return f"/media/{key}"
+
+
+class FakeImageProcessor:
+    def to_webp(self, data: bytes, max_side: int) -> ProcessedImage:
+        return ProcessedImage(data=b"RIFF0000WEBP" + data[:16], width=640, height=480)
+
+
 class Fakes:
     """One set of shared fakes for a test."""
 
@@ -235,6 +264,9 @@ class Fakes:
         self.sites = InMemorySites()
         self.reserved = InMemoryReservedSlugs()
         self.site_cache = InMemorySiteCache()
+        self.media = InMemoryMedia()
+        self.storage = InMemoryStorage()
+        self.images = FakeImageProcessor()
 
 
 class FakesProvider(Provider):
@@ -293,3 +325,15 @@ class FakesProvider(Provider):
     @provide
     def site_cache(self) -> SiteCache:
         return self.fakes.site_cache
+
+    @provide
+    def media(self) -> MediaRepository:
+        return self.fakes.media
+
+    @provide
+    def storage(self) -> FileStorage:
+        return self.fakes.storage
+
+    @provide
+    def images(self) -> ImageProcessor:
+        return self.fakes.images

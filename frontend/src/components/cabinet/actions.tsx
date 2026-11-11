@@ -18,7 +18,8 @@ export function LogoutButton() {
       onClick={() =>
         startTransition(async () => {
           await apiPost("/api/auth/logout");
-          // Full page load: drops every cached route that still holds the user's data.
+          // Full page load on purpose: drops every cached route that still holds the user's data.
+          // eslint-disable-next-line @next/next/no-location-assign-relative-destination
           window.location.assign("/app/login");
         })
       }

@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/Button";
@@ -9,7 +8,6 @@ import { apiPost } from "@/lib/api/client";
 import { errorText } from "@/lib/auth/schemas";
 
 export function LogoutButton() {
-  const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   return (
@@ -20,8 +18,8 @@ export function LogoutButton() {
       onClick={() =>
         startTransition(async () => {
           await apiPost("/api/auth/logout");
-          router.replace("/app/login");
-          router.refresh();
+          // Full page load: drops every cached route that still holds the user's data.
+          window.location.assign("/app/login");
         })
       }
     >

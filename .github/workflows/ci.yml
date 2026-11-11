@@ -143,6 +143,13 @@ jobs:
           pnpm build
           pnpm exec playwright install --with-deps chromium
           pnpm e2e
+      - name: Playwright traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: frontend/test-results/
+          retention-days: 7
       - name: Service logs
         if: failure()
         run: |

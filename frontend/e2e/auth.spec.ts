@@ -79,7 +79,9 @@ test("register → verify email → logout → login → reset password", async 
 
   // Password reset by email, then sign in with the new password.
   await page.getByRole("button", { name: "Выйти" }).click();
+  await expect(page).toHaveURL(/\/app\/login$/);
   await page.getByRole("link", { name: "Забыли пароль?" }).click();
+  await expect(page).toHaveURL(/\/app\/forgot-password$/);
   await page.getByLabel("Почта").filter({ visible: true }).fill(email);
   await page.getByRole("button", { name: "Прислать ссылку" }).click();
   await expect(page.getByRole("main").getByRole("status")).toContainText("письмо уже в пути");

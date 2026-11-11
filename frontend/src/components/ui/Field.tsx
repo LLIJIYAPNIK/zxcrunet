@@ -41,7 +41,7 @@ type InputProps = ComponentProps<"input"> & {
 
 export function Input({ prefix, suffix, className, ...rest }: InputProps) {
   return (
-    <div className={cn(box, className)}>
+    <div className={cn(box, "min-w-0", className)}>
       {prefix && <span className="font-mono text-sm text-muted">{prefix}</span>}
       <input
         className="min-w-0 flex-1 bg-transparent text-base text-ink outline-none placeholder:text-muted"

@@ -8,7 +8,7 @@ export function Claim() {
   const t = ru.claim;
   return (
     <section aria-labelledby="claim-title" className="wrap py-20 lg:py-28">
-      <div className="grid items-end gap-8 rounded-lg border border-line-2 bg-surface p-6 sm:p-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-end gap-8 rounded-lg border border-line-2 bg-surface p-6 sm:p-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
         <div className="flex flex-col gap-3">
           <h2 id="claim-title" className="font-display text-h2 font-medium">
             {t.title}
@@ -27,7 +27,7 @@ export function Claim() {
             autoComplete="off"
             spellCheck={false}
             pattern="[a-z0-9-]{3,32}"
-            className="flex-1"
+            className="min-w-0 flex-1"
           />
           <Button type="submit" arrow className="h-12">
             {t.submit}

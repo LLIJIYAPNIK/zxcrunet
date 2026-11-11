@@ -6,10 +6,19 @@ for (const width of [390, 768, 1440]) {
     await page.goto("/");
 
     await expect(page.getByRole("heading", { level: 1 })).toContainText("светится");
-    const overflow = await page.evaluate(
-      () => document.documentElement.scrollWidth - window.innerWidth,
-    );
-    expect(overflow).toBeLessThanOrEqual(0);
+    const { overflow, offenders } = await page.evaluate(() => {
+      const vw = document.documentElement.clientWidth;
+      const offenders = [...document.querySelectorAll("body *")]
+        .filter((el) => el.getBoundingClientRect().right > vw + 0.5)
+        .slice(0, 8)
+        .map((el) => {
+          const cls = typeof el.className === "string" ? el.className : "";
+          const text = (el.textContent ?? "").trim().slice(0, 40);
+          return `${el.tagName}.${cls.slice(0, 60)} right=${Math.round(el.getBoundingClientRect().right)} «${text}»`;
+        });
+      return { overflow: document.documentElement.scrollWidth - vw, offenders };
+    });
+    expect(overflow, offenders.join(" | ")).toBeLessThanOrEqual(0);
   });
 }
 

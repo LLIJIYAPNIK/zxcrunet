@@ -287,7 +287,7 @@ export function SiteSettings({ initial, emailVerified }: SiteSettingsProps) {
           <Section title={t.edit.address}>
             <form onSubmit={saveSlug} className="flex flex-col gap-4">
               <SlugField
-                label={t.create.slugLabel}
+                label={t.edit.subdomain}
                 value={slug}
                 onChange={setSlug}
                 current={site.slug}

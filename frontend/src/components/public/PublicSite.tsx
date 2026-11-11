@@ -74,7 +74,7 @@ export function PublicSite({ slug, content, page }: PublicSiteProps) {
       <main className="wrap flex flex-1 flex-col py-16 lg:py-24">
         {page.blocks.length === 0 ? (
           <div className="flex flex-col gap-4" data-enter>
-            <span className="label">{page.title}</span>
+            {page.path && <span className="label">{page.title}</span>}
             <h1 className="font-display text-h1 font-medium">{content.title}</h1>
             <div className="mt-6 max-w-xl rounded-lg border border-dashed border-line-2 p-6 sm:p-8">
               <p className="font-display text-h3 font-medium">{t.empty}</p>

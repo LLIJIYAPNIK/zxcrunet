@@ -4,12 +4,15 @@ import { Icon } from "@/components/ui/Icon";
 import { ru } from "@/i18n/ru";
 import { requireMe } from "@/lib/auth/session";
 
+import { SitesList } from "@/components/sites/SitesList";
+
 import { LogoutButton, ResendVerificationButton } from "./actions";
 
 const t = ru.cabinet;
 
 /** Reads the session: render only inside <Suspense>. */
-export async function Dashboard() {
+export async function Dashboard({ searchParams }: { searchParams: Promise<{ slug?: string }> }) {
+  const claimSlug = (await searchParams).slug;
   const { user, limits } = await requireMe("/app");
 
   return (
@@ -38,10 +41,7 @@ export async function Dashboard() {
       )}
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <Card className="flex min-h-56 flex-col gap-3">
-          <h2 className="font-display text-h3 font-medium">{t.sitesTitle}</h2>
-          <p className="max-w-[44ch] text-ink-2">{t.sitesEmpty}</p>
-        </Card>
+        <SitesList claimSlug={claimSlug} />
         <Card className="flex flex-col gap-4">
           <h2 className="flex items-baseline justify-between gap-3 font-display text-h3 font-medium">
             {t.planTitle}

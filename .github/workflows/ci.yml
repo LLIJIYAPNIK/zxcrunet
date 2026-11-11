@@ -109,7 +109,11 @@ jobs:
       ZXC_ALLOWED_ORIGINS: '["http://localhost:3100"]'
       ZXC_SMTP_HOST: localhost
       ZXC_SMTP_PORT: "1025"
+      ZXC_SITES_DOMAIN: localhost
+      ZXC_REGISTER_PER_IP_PER_HOUR: "100"
       API_INTERNAL_URL: http://localhost:8000
+      APP_HOSTS: localhost,127.0.0.1
+      NEXT_PUBLIC_SITE_URL_TEMPLATE: http://{host}:3100
       MAILPIT_URL: http://localhost:8025
       E2E_FULL: "1"
       NEXT_TELEMETRY_DISABLED: "1"

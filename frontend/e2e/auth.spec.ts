@@ -33,9 +33,13 @@ async function linkFromEmail(to: string, subject: string): Promise<string> {
   return link!;
 }
 
+/*
+ * Next.js 16 keeps the previous route mounted but hidden (<Activity>) after client navigation,
+ * and getByLabel does not skip hidden elements, so form fields are filtered to visible ones.
+ */
 async function fillCredentials(page: Page, email: string, password: string) {
-  await page.getByLabel("Почта").fill(email);
-  await page.getByLabel(/^(Пароль|Новый пароль)$/).fill(password);
+  await page.getByLabel("Почта").filter({ visible: true }).fill(email);
+  await page.getByLabel(/^(Пароль|Новый пароль).filter({ visible: true })$/).fill(password);
 }
 
 test("register → verify email → logout → login → reset password", async ({ page }) => {
@@ -73,12 +77,12 @@ test("register → verify email → logout → login → reset password", async 
   // Password reset by email, then sign in with the new password.
   await page.getByRole("button", { name: "Выйти" }).click();
   await page.getByRole("link", { name: "Забыли пароль?" }).click();
-  await page.getByLabel("Почта").fill(email);
+  await page.getByLabel("Почта").filter({ visible: true }).fill(email);
   await page.getByRole("button", { name: "Прислать ссылку" }).click();
   await expect(page.getByRole("main").getByRole("status")).toContainText("письмо уже в пути");
 
   await page.goto(await linkFromEmail(email, "Сброс пароля"));
-  await page.getByLabel("Новый пароль").fill("brand new password");
+  await page.getByLabel("Новый пароль").filter({ visible: true }).fill("brand new password");
   await page.getByRole("button", { name: "Сохранить пароль" }).click();
   await expect(page.getByText("Пароль изменён.", { exact: false })).toBeVisible();
 

@@ -22,6 +22,10 @@ cp .env.example .env
 uv sync
 uv run alembic upgrade head
 uv run uvicorn --factory zxcrunet.main:create_app --reload
+# в отдельном терминале: фоновые задачи (отправка писем)
+uv run taskiq worker zxcrunet.worker:broker
+# владелец продукта (роль owner): создать или повысить существующего пользователя
+uv run python -m zxcrunet.cli create-owner you@example.com
 
 # 3. Фронтенд: http://localhost:3000
 cd frontend
@@ -44,6 +48,9 @@ ZXC_RUN_INTEGRATION=1 uv run pytest   # с запущенными Postgres и Re
 cd frontend
 pnpm format:check && pnpm lint && pnpm typecheck && pnpm test
 
-# типы API для фронтенда (бэкенд должен быть запущен)
-pnpm api:types
+pnpm e2e                               # лендинг; полный путь аккаунта — с E2E_FULL=1 и запущенным стеком
+
+# типы API для фронтенда после изменения эндпоинтов
+cd backend && uv run python -m zxcrunet.openapi > ../frontend/src/lib/api/openapi.json
+cd frontend && pnpm api:types
 ```

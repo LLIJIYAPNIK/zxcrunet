@@ -3,3 +3,4 @@ node_modules
 pnpm-lock.yaml
 src/lib/api/schema.d.ts
 AGENTS.md
+src/lib/api/openapi.json

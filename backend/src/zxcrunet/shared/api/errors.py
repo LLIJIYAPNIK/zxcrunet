@@ -8,22 +8,31 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from zxcrunet.shared.domain.errors import (
+    AppError,
+    ConflictError,
+    ForbiddenError,
+    InvalidInputError,
+    NotAuthenticatedError,
+    NotFoundError,
+    RateLimitedError,
+)
 
-class AppError(Exception):
-    """Base class for expected errors that are reported to API clients."""
-
-    code: str = "app_error"
-    status_code: int = HTTPStatus.BAD_REQUEST
-
-    def __init__(self, message: str, details: dict[str, Any] | None = None) -> None:
-        super().__init__(message)
-        self.message = message
-        self.details = details or {}
+STATUS_BY_ERROR: dict[type[AppError], HTTPStatus] = {
+    InvalidInputError: HTTPStatus.UNPROCESSABLE_ENTITY,
+    NotAuthenticatedError: HTTPStatus.UNAUTHORIZED,
+    ForbiddenError: HTTPStatus.FORBIDDEN,
+    NotFoundError: HTTPStatus.NOT_FOUND,
+    ConflictError: HTTPStatus.CONFLICT,
+    RateLimitedError: HTTPStatus.TOO_MANY_REQUESTS,
+}
 
 
-class NotFoundError(AppError):
-    code = "not_found"
-    status_code = HTTPStatus.NOT_FOUND
+def status_for(exc: AppError) -> HTTPStatus:
+    for kind in type(exc).__mro__:
+        if kind in STATUS_BY_ERROR:
+            return STATUS_BY_ERROR[kind]
+    return HTTPStatus.BAD_REQUEST
 
 
 def error_body(code: str, message: str, details: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -33,7 +42,7 @@ def error_body(code: str, message: str, details: dict[str, Any] | None = None) -
 async def _app_error_handler(_: Request, exc: Exception) -> JSONResponse:
     if not isinstance(exc, AppError):
         raise exc
-    return JSONResponse(error_body(exc.code, exc.message, exc.details), exc.status_code)
+    return JSONResponse(error_body(exc.code, exc.message, exc.details), status_for(exc))
 
 
 async def _http_error_handler(_: Request, exc: Exception) -> JSONResponse:

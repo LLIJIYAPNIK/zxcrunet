@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
+const API_INTERNAL_URL = process.env.API_INTERNAL_URL ?? "http://localhost:8000";
+
 const nextConfig: NextConfig = {
-  /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {
@@ -11,6 +12,13 @@ const nextConfig: NextConfig = {
         as: "*.css",
       },
     },
+  },
+  /*
+   * The browser always talks to same-origin `/api`, so the session cookie stays host-only.
+   * In production Caddy routes `/api` to FastAPI before Next.js; locally this rewrite does it.
+   */
+  async rewrites() {
+    return [{ source: "/api/:path*", destination: `${API_INTERNAL_URL}/api/:path*` }];
   },
 };
 

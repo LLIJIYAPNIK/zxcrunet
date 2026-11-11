@@ -14,4 +14,4 @@ def render() -> str:
 
 
 if __name__ == "__main__":
-    sys.stdout.write(render())
+    sys.stdout.buffer.write(render().encode("utf-8"))

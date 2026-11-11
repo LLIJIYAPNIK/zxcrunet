@@ -49,6 +49,8 @@ jobs:
       - run: uv run mypy
       - name: Migrations apply to a clean database
         run: uv run alembic upgrade head
+      - name: Models match migrations
+        run: uv run alembic check
       - run: uv run pytest
 
   frontend:
@@ -69,10 +71,80 @@ jobs:
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      - name: API types match openapi.json
+        run: pnpm api:types && git diff --exit-code src/lib/api/schema.d.ts
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
-      - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm e2e
+
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: zxc
+          POSTGRES_PASSWORD: zxc
+          POSTGRES_DB: zxc
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U zxc -d zxc"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+      mailpit:
+        image: axllent/mailpit:latest
+        ports: ["1025:1025", "8025:8025"]
+    env:
+      ZXC_ENV: test
+      ZXC_DATABASE_URL: postgresql+asyncpg://zxc:zxc@localhost:5432/zxc
+      ZXC_REDIS_URL: redis://localhost:6379/0
+      ZXC_PUBLIC_URL: http://localhost:3100
+      ZXC_ALLOWED_ORIGINS: '["http://localhost:3100"]'
+      ZXC_SMTP_HOST: localhost
+      ZXC_SMTP_PORT: "1025"
+      API_INTERNAL_URL: http://localhost:8000
+      MAILPIT_URL: http://localhost:8025
+      E2E_FULL: "1"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: Start API and worker
+        working-directory: backend
+        run: |
+          uv sync --locked
+          uv run alembic upgrade head
+          nohup uv run uvicorn --factory zxcrunet.main:create_app --port 8000 > ../api.log 2>&1 &
+          nohup uv run taskiq worker zxcrunet.worker:broker > ../worker.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf localhost:8000/api/health/ready && break; sleep 1; done
+          curl -sf localhost:8000/api/health/ready
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Build frontend and run Playwright
+        working-directory: frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+          pnpm exec playwright install --with-deps chromium
+          pnpm e2e
+      - name: Service logs
+        if: failure()
+        run: |
+          echo "::group::api.log"; cat api.log; echo "::endgroup::"
+          echo "::group::worker.log"; cat worker.log; echo "::endgroup::"

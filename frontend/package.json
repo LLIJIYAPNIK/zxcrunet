@@ -12,13 +12,16 @@
     "test:watch": "vitest",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "api:types": "openapi-typescript http://localhost:8000/api/openapi.json -o src/lib/api/schema.d.ts",
+    "api:types": "openapi-typescript src/lib/api/openapi.json -o src/lib/api/schema.d.ts",
     "e2e": "playwright test"
   },
   "dependencies": {
+    "@hookform/resolvers": "^7.0.5",
     "next": "16.4.6",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "react-hook-form": "^7.92.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@playwright/test": "^1.65.0",

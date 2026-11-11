@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+/* Базовые токены из design/Неоновые визитки — редизайн.html.
+   Полный перенос дизайн-системы — этап 1. */
+:root {
+  --board: #05070b;
+  --raised: #1a2030;
+  --ink: #e9edf3;
+  --line-2: rgba(233, 237, 243, 0.18);
+  --accent: #5ab9fc;
+}
+
+@theme inline {
+  --color-board: var(--board);
+  --color-raised: var(--raised);
+  --color-ink: var(--ink);
+  --color-accent: var(--accent);
+  --font-display: var(--font-onest), system-ui, sans-serif;
+  --font-sans: var(--font-onest), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, Consolas, monospace;
+}
+
+body {
+  background: var(--board);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}

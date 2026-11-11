@@ -147,6 +147,14 @@ jobs:
           pnpm build
           pnpm exec playwright install --with-deps chromium
           pnpm e2e
+      - name: Screenshots for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-shots
+          path: frontend/e2e-shots/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Playwright traces
         if: failure()
         uses: actions/upload-artifact@v4

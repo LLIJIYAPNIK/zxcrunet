@@ -10,6 +10,8 @@ import { FULL_STACK, SKIP_REASON, registerVerified } from "./helpers";
 test.skip(!FULL_STACK, SKIP_REASON);
 
 const PORT = 3100;
+/** Screenshots for visual review; CI uploads this folder as an artifact. */
+const SHOTS = "e2e-shots";
 const siteOrigin = (slug: string) => `http://${slug}.localhost:${PORT}`;
 
 test("create → publish → open on the subdomain → unpublish", async ({ page }) => {
@@ -32,6 +34,7 @@ test("create → publish → open on the subdomain → unpublish", async ({ page
   await page.getByRole("button", { name: "Создать", exact: true }).click();
   await expect(page).toHaveURL(/\/app\/sites\/[0-9a-f-]{36}$/);
   await expect(page.getByText("Черновик", { exact: true })).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/settings-1440.png`, fullPage: true });
 
   // The draft is still private.
   const draft = await page.request.get(`http://localhost:${PORT}/api/public/sites/resolve`, {
@@ -47,6 +50,10 @@ test("create → publish → open on the subdomain → unpublish", async ({ page
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Саша: игры и книги");
   await expect(page.getByText("Визитка пока пустая")).toBeVisible();
   await expect(page.getByRole("link", { name: /Сделано на/ })).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/public-1440.png`, fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: `${SHOTS}/public-390.png`, fullPage: true });
+  await page.setViewportSize({ width: 1280, height: 720 });
 
   // The session cookie is host-only: the user's subdomain never receives it.
   expect(await page.context().cookies(siteOrigin(slug))).toEqual([]);
@@ -57,6 +64,8 @@ test("create → publish → open on the subdomain → unpublish", async ({ page
 
   // Unpublish: the address answers 404 again.
   await page.goto(`http://localhost:${PORT}/app`);
+  await expect(page.getByRole("link", { name: "Настройки" }).first()).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/dashboard-1440.png`, fullPage: true });
   await page.getByRole("link", { name: "Настройки" }).first().click();
   await page.getByRole("button", { name: "Снять с публикации" }).click();
   await expect(page.getByText("Черновик", { exact: true })).toBeVisible();

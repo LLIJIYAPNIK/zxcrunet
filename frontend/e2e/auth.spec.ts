@@ -65,7 +65,7 @@ test("register → verify email → logout → login → reset password", async 
   // Wrong password shows a generic error; the right one signs in and returns to `next`.
   await fillCredentials(page, email, "wrong password!!");
   await page.getByRole("button", { name: "Войти" }).click();
-  await expect(page.getByRole("alert")).toHaveText("Неверная почта или пароль.");
+  await expect(page.getByRole("main").getByRole("alert")).toHaveText("Неверная почта или пароль.");
   await fillCredentials(page, email, PASSWORD);
   await page.getByRole("button", { name: "Войти" }).click();
   await expect(page).toHaveURL(/\/app$/);
@@ -75,7 +75,7 @@ test("register → verify email → logout → login → reset password", async 
   await page.getByRole("link", { name: "Забыли пароль?" }).click();
   await page.getByLabel("Почта").fill(email);
   await page.getByRole("button", { name: "Прислать ссылку" }).click();
-  await expect(page.getByRole("status")).toContainText("письмо уже в пути");
+  await expect(page.getByRole("main").getByRole("status")).toContainText("письмо уже в пути");
 
   await page.goto(await linkFromEmail(email, "Сброс пароля"));
   await page.getByLabel("Новый пароль").fill("brand new password");
@@ -100,5 +100,5 @@ test("duplicate registration suggests signing in", async ({ page }) => {
   await fillCredentials(page, email, PASSWORD);
   await page.getByRole("button", { name: "Создать аккаунт" }).click();
 
-  await expect(page.getByRole("alert")).toContainText("уже зарегистрирована");
+  await expect(page.getByRole("main").getByRole("alert")).toContainText("уже зарегистрирована");
 });

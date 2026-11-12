@@ -6,6 +6,7 @@ from dishka.integrations.fastapi import FastapiProvider
 from httpx import ASGITransport, AsyncClient
 
 from tests.fakes import AllowAllRateLimiter, CapturingMailer
+from zxcrunet.catalog.di import CatalogProvider
 from zxcrunet.identity.application.ports import Mailer
 from zxcrunet.identity.di import IdentityProvider
 from zxcrunet.main import create_app
@@ -38,6 +39,7 @@ async def client(mailer: CapturingMailer) -> AsyncIterator[AsyncClient]:
         IdentityProvider(),
         MediaProvider(),
         SitesProvider(),
+        CatalogProvider(),
         overrides,
         context={Settings: settings},
     )

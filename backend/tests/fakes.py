@@ -10,6 +10,9 @@ from uuid import UUID
 
 from dishka import Provider, Scope, provide
 
+from zxcrunet.catalog.application.use_cases import CatalogCache, PublicCatalog
+from zxcrunet.catalog.domain.catalog import Post, Title, TitleKind
+from zxcrunet.catalog.domain.repository import PostRepository, TitleRepository
 from zxcrunet.identity.application.ports import (
     EmailMessage,
     Mailer,
@@ -248,6 +251,85 @@ class FakeImageProcessor:
         return ProcessedImage(data=b"RIFF0000WEBP" + data[:16], width=640, height=480)
 
 
+class InMemoryTitles:
+    def __init__(self) -> None:
+        self.by_id: dict[UUID, Title] = {}
+
+    async def get(self, title_id: UUID) -> Title | None:
+        title = self.by_id.get(title_id)
+        return copy.deepcopy(title) if title else None
+
+    async def list_by_owner(self, owner_id: UUID) -> list[Title]:
+        return [copy.deepcopy(t) for t in self.by_id.values() if t.owner_id == owner_id]
+
+    async def count_by_owner(self, owner_id: UUID) -> int:
+        return sum(1 for t in self.by_id.values() if t.owner_id == owner_id)
+
+    async def slug_taken(
+        self, owner_id: UUID, kind: TitleKind, slug: str, *, except_id: UUID | None = None
+    ) -> bool:
+        return any(
+            t.owner_id == owner_id and t.kind == kind and t.slug == slug and t.id != except_id
+            for t in self.by_id.values()
+        )
+
+    async def count_parts(self, series_id: UUID) -> int:
+        return sum(1 for t in self.by_id.values() if t.series_id == series_id)
+
+    async def add(self, title: Title) -> None:
+        self.by_id[title.id] = copy.deepcopy(title)
+
+    async def save(self, title: Title) -> None:
+        self.by_id[title.id] = copy.deepcopy(title)
+
+    async def delete(self, title: Title) -> None:
+        self.by_id.pop(title.id, None)
+        for other in self.by_id.values():
+            if other.series_id == title.id:
+                other.series_id = None
+
+
+class InMemoryPosts:
+    def __init__(self) -> None:
+        self.by_id: dict[UUID, Post] = {}
+
+    async def get(self, post_id: UUID) -> Post | None:
+        post = self.by_id.get(post_id)
+        return copy.deepcopy(post) if post else None
+
+    async def list_by_owner(self, owner_id: UUID) -> list[Post]:
+        posts = [copy.deepcopy(p) for p in self.by_id.values() if p.owner_id == owner_id]
+        return sorted(posts, key=lambda p: (p.published_on, p.created_at), reverse=True)
+
+    async def count_by_owner(self, owner_id: UUID) -> int:
+        return sum(1 for p in self.by_id.values() if p.owner_id == owner_id)
+
+    async def add(self, post: Post) -> None:
+        self.by_id[post.id] = copy.deepcopy(post)
+
+    async def save(self, post: Post) -> None:
+        self.by_id[post.id] = copy.deepcopy(post)
+
+    async def delete(self, post: Post) -> None:
+        self.by_id.pop(post.id, None)
+
+
+class InMemoryCatalogCache:
+    def __init__(self) -> None:
+        self.data: dict[UUID, PublicCatalog] = {}
+        self.invalidated: list[UUID] = []
+
+    async def get(self, owner_id: UUID) -> PublicCatalog | None:
+        return self.data.get(owner_id)
+
+    async def set(self, owner_id: UUID, value: PublicCatalog) -> None:
+        self.data[owner_id] = value
+
+    async def invalidate(self, owner_id: UUID) -> None:
+        self.invalidated.append(owner_id)
+        self.data.pop(owner_id, None)
+
+
 class Fakes:
     """One set of shared fakes for a test."""
 
@@ -267,6 +349,9 @@ class Fakes:
         self.media = InMemoryMedia()
         self.storage = InMemoryStorage()
         self.images = FakeImageProcessor()
+        self.titles = InMemoryTitles()
+        self.posts = InMemoryPosts()
+        self.catalog_cache = InMemoryCatalogCache()
 
 
 class FakesProvider(Provider):
@@ -337,3 +422,15 @@ class FakesProvider(Provider):
     @provide
     def images(self) -> ImageProcessor:
         return self.fakes.images
+
+    @provide
+    def titles(self) -> TitleRepository:
+        return self.fakes.titles
+
+    @provide
+    def posts(self) -> PostRepository:
+        return self.fakes.posts
+
+    @provide
+    def catalog_cache(self) -> CatalogCache:
+        return self.fakes.catalog_cache

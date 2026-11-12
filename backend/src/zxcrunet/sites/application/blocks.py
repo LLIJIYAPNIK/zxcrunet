@@ -4,7 +4,6 @@ The frontend mirrors every schema in zod (`frontend/src/blocks`). The backend is
 authority: blocks are validated here before they reach the draft.
 """
 
-import re
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
@@ -17,42 +16,31 @@ from pydantic import (
     field_validator,
 )
 
+from zxcrunet.shared.application.content import (
+    ContentModel as _Model,
+)
+from zxcrunet.shared.application.content import (
+    Line,
+    Link,
+    MediaRef,
+    Short,
+    Text,
+    Url,
+    safe_url,
+)
+from zxcrunet.shared.application.content import (
+    media_ids as _media_ids,
+)
 from zxcrunet.shared.domain.errors import InvalidInputError
 
 MAX_BLOCKS_PER_PAGE = 40
-SAFE_URL = re.compile(r"^(https?://|mailto:|tel:|tg://|#)[^\s<>\"']*$", re.IGNORECASE)
 
-Short = Annotated[str, StringConstraints(strip_whitespace=True, max_length=80)]
-Line = Annotated[str, StringConstraints(strip_whitespace=True, max_length=160)]
-Text = Annotated[str, StringConstraints(strip_whitespace=True, max_length=1200)]
+TitleKind = Literal["game", "book", "anime", "series", "film"]
+ALL_KINDS: tuple[TitleKind, ...] = ("game", "book", "anime", "series", "film")
 
 
 class InvalidBlockError(InvalidInputError):
     code = "invalid_block"
-
-
-class _Model(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-
-class Link(_Model):
-    label: Short
-    url: Annotated[str, StringConstraints(strip_whitespace=True, max_length=500)]
-
-    @field_validator("url")
-    @classmethod
-    def _safe(cls, value: str) -> str:
-        if not SAFE_URL.fullmatch(value):
-            msg = "only http(s), mailto, tel, tg links and #anchors are allowed"
-            raise ValueError(msg)
-        return value
-
-
-class MediaRef(_Model):
-    id: UUID
-    url: Annotated[str, StringConstraints(pattern=r"^/media/[A-Za-z0-9/_.-]+$", max_length=200)]
-    width: int | None = None
-    height: int | None = None
 
 
 # --- business blocks ----------------------------------------------------------
@@ -118,12 +106,12 @@ class Contact(_Model):
     kind: ContactKind
     label: Short
     value: Short
-    url: Annotated[str, StringConstraints(strip_whitespace=True, max_length=500)]
+    url: Url
 
     @field_validator("url")
     @classmethod
     def _safe(cls, value: str) -> str:
-        return Link(label="x", url=value).url
+        return safe_url(value)
 
 
 class ContactsSettings(_Model):
@@ -138,6 +126,102 @@ class ResumeSettings(_Model):
     file: MediaRef | None = None
 
 
+# --- personal blocks ----------------------------------------------------------
+# Shelves, «now», characters and posts come from the owner's catalog when the page is
+# rendered; blocks keep only presentation and references (title ids) to it.
+
+Required = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)]
+
+
+class ProfileSettings(_Model):
+    cover: MediaRef | None = None
+    avatar: MediaRef | None = None
+    title: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=160)]
+    lead: Text = ""
+    mood: Short = ""
+
+
+class NowSettings(_Model):
+    label: Short = ""
+    kinds: list[TitleKind] = Field(
+        default_factory=lambda: list(ALL_KINDS),
+        min_length=1,
+        max_length=5,
+    )
+    limit: int = Field(default=3, ge=1, le=6)
+
+
+ShelfStyle = Literal["cards", "bento", "spines", "tickets", "tracker"]
+
+
+class ShelfSettings(_Model):
+    kind: TitleKind
+    style: ShelfStyle = "cards"
+    label: Short = ""
+    title: Line = ""
+    lead: Text = ""
+    #: Status filters, sorting and views for guests (their choice is remembered).
+    controls: bool = False
+    limit: int = Field(default=12, ge=1, le=60)
+    all_link: Link | None = None
+
+
+class CharactersSettings(_Model):
+    label: Short = ""
+    title: Line = ""
+
+
+class TopSettings(_Model):
+    label: Short = ""
+    title: Line = ""
+    items: list[UUID] = Field(min_length=1, max_length=10)
+
+
+class ChallengeSettings(_Model):
+    label: Short = ""
+    kind: TitleKind = "book"
+    year: int = Field(ge=2000, le=2100)
+    goal: int = Field(ge=1, le=1000)
+
+
+class Quote(_Model):
+    text: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1200)]
+    source: Line = ""
+    title_id: UUID | None = None
+
+
+class QuotesSettings(_Model):
+    label: Short = ""
+    title: Line = ""
+    items: list[Quote] = Field(min_length=1, max_length=20)
+
+
+class PlaylistTrack(_Model):
+    track: Required
+    artist: Short = ""
+    title_id: UUID | None = None
+    url: Url | None = None
+
+    @field_validator("url")
+    @classmethod
+    def _safe(cls, value: str | None) -> str | None:
+        return safe_url(value) if value else None
+
+
+class PlaylistSettings(_Model):
+    label: Short = ""
+    title: Line = ""
+    lead: Text = ""
+    items: list[PlaylistTrack] = Field(min_length=1, max_length=30)
+
+
+class PostsSettings(_Model):
+    label: Short = ""
+    title: Line = ""
+    kind: Literal["all", "review", "note"] = "all"
+    limit: int = Field(default=6, ge=1, le=24)
+
+
 SCHEMAS: dict[str, dict[int, type[_Model]]] = {
     "hero": {1: HeroSettings},
     "facts": {1: FactsSettings},
@@ -146,9 +230,35 @@ SCHEMAS: dict[str, dict[int, type[_Model]]] = {
     "interests": {1: InterestsSettings},
     "contacts": {1: ContactsSettings},
     "resume": {1: ResumeSettings},
+    "profile": {1: ProfileSettings},
+    "now": {1: NowSettings},
+    "shelf": {1: ShelfSettings},
+    "characters": {1: CharactersSettings},
+    "top": {1: TopSettings},
+    "challenge": {1: ChallengeSettings},
+    "quotes": {1: QuotesSettings},
+    "playlist": {1: PlaylistSettings},
+    "posts": {1: PostsSettings},
 }
 
-BlockType = Literal["hero", "facts", "experience", "projects", "interests", "contacts", "resume"]
+BlockType = Literal[
+    "hero",
+    "facts",
+    "experience",
+    "projects",
+    "interests",
+    "contacts",
+    "resume",
+    "profile",
+    "now",
+    "shelf",
+    "characters",
+    "top",
+    "challenge",
+    "quotes",
+    "playlist",
+    "posts",
+]
 
 
 class BlockIn(BaseModel):
@@ -170,14 +280,32 @@ def _errors(exc: ValidationError) -> list[dict[str, Any]]:
     ]
 
 
-def validate_blocks(blocks: list[BlockIn]) -> list[dict[str, Any]]:
+COMMON_BLOCKS = frozenset({"hero", "interests", "contacts"})
+PERSONAL_ONLY = frozenset(
+    {"profile", "now", "shelf", "characters", "top", "challenge", "quotes", "playlist", "posts"}
+)
+BUSINESS_ONLY = frozenset(SCHEMAS) - COMMON_BLOCKS - PERSONAL_ONLY
+
+
+def allowed_for(site_kind: str) -> frozenset[str]:
+    """Block types a site of this kind may use (catalog blocks only on personal sites)."""
+    return COMMON_BLOCKS | (PERSONAL_ONLY if site_kind == "personal" else BUSINESS_ONLY)
+
+
+def validate_blocks(blocks: list[BlockIn], site_kind: str | None = None) -> list[dict[str, Any]]:
     """Validate and normalise; returns plain dicts ready to be stored."""
     if len(blocks) > MAX_BLOCKS_PER_PAGE:
         raise InvalidBlockError("Too many blocks", {"max": MAX_BLOCKS_PER_PAGE})
     if len({b.id for b in blocks}) != len(blocks):
         raise InvalidBlockError("Block ids must be unique")
+    allowed = allowed_for(site_kind) if site_kind else frozenset(SCHEMAS)
     result: list[dict[str, Any]] = []
     for index, block in enumerate(blocks):
+        if block.type not in allowed:
+            raise InvalidBlockError(
+                "Block is not available for this kind of site",
+                {"index": index, "type": block.type},
+            )
         schema = SCHEMAS[block.type].get(block.version)
         if schema is None:
             raise InvalidBlockError("Unknown block version", {"index": index, "type": block.type})
@@ -202,17 +330,4 @@ def validate_blocks(blocks: list[BlockIn]) -> list[dict[str, Any]]:
 
 def media_ids(blocks: list[dict[str, Any]]) -> set[UUID]:
     """Every uploaded file a list of validated blocks refers to."""
-    found: set[UUID] = set()
-
-    def walk(value: Any) -> None:
-        if isinstance(value, dict):
-            if set(value) >= {"id", "url"} and str(value.get("url", "")).startswith("/media/"):
-                found.add(UUID(str(value["id"])))
-            for item in value.values():
-                walk(item)
-        elif isinstance(value, list):
-            for item in value:
-                walk(item)
-
-    walk([b["settings"] for b in blocks])
-    return found
+    return _media_ids([b["settings"] for b in blocks])

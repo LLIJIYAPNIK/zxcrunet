@@ -120,3 +120,54 @@ def test_snapshot_drops_hidden_blocks_and_counts_changes() -> None:
     site.set_blocks(home.id, blocks[:1], NOW)
     site.rename("Анна В.", NOW)
     assert site.unpublished_changes == 2
+
+
+CONTACTS: dict[str, Any] = {
+    "title": "Пишите",
+    "items": [
+        {"kind": "telegram", "label": "Telegram", "value": "@sasha", "url": "https://t.me/sasha"}
+    ],
+}
+
+PERSONAL: dict[str, dict[str, Any]] = {
+    "profile": {"title": "Саша Кулебякин: игры, книги и сериалы", "mood": "Дочитываю Канемана"},
+    "now": {},
+    "shelf": {"kind": "game", "style": "bento", "controls": True},
+    "characters": {"title": "Мои персонажи"},
+    "top": {"items": [str(uuid4())]},
+    "challenge": {"year": 2026, "goal": 15},
+    "quotes": {"items": [{"text": "Ничто в жизни не важно настолько…", "source": "Канеман"}]},
+    "playlist": {"items": [{"track": "Firelink Shrine", "url": "https://music.example/x"}]},
+    "posts": {"kind": "review"},
+}
+
+
+@pytest.mark.parametrize("type_", sorted(PERSONAL))
+def test_personal_blocks_validate_on_personal_sites(type_: str) -> None:
+    (stored,) = validate_blocks([block(type_, PERSONAL[type_])], "personal")
+
+    assert stored["type"] == type_
+
+
+def test_personal_blocks_are_not_for_business_sites() -> None:
+    with pytest.raises(InvalidBlockError, match="not available"):
+        validate_blocks([block("shelf", PERSONAL["shelf"])], "business")
+    with pytest.raises(InvalidBlockError, match="not available"):
+        validate_blocks([block("facts", {"items": [{"value": "1", "label": "x"}]})], "personal")
+    # Shared blocks work everywhere.
+    validate_blocks([block("contacts", CONTACTS)], "personal")
+
+
+@pytest.mark.parametrize(
+    ("type_", "settings"),
+    [
+        ("shelf", {"kind": "music"}),
+        ("now", {"limit": 7}),
+        ("top", {"items": []}),
+        ("challenge", {"year": 2026, "goal": 0}),
+        ("playlist", {"items": [{"track": "x", "url": "javascript:alert(1)"}]}),
+    ],
+)
+def test_personal_blocks_reject_bad_settings(type_: str, settings: dict[str, Any]) -> None:
+    with pytest.raises(InvalidBlockError):
+        validate_blocks([block(type_, settings)], "personal")

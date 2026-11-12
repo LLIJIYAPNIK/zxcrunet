@@ -58,6 +58,12 @@ class ResolvedSite:
     site_id: str
     slug: str
     content: dict[str, Any] | None
+    #: Internal (never sent to clients): lets other contexts find the owner's data.
+    owner_id: str = ""
+
+    @property
+    def kind(self) -> str | None:
+        return str(self.content["kind"]) if self.content else None
 
 
 class _Base:
@@ -266,7 +272,7 @@ class SetPageBlocks(_Base):
         self, actor: Actor, site_id: UUID, page_id: UUID, blocks: list[BlockIn]
     ) -> Page:
         site = await self._own(actor, site_id)
-        clean = validate_blocks(blocks)
+        clean = validate_blocks(blocks, site.kind.value)
         await self.media.ensure_owned(actor.user_id, media_ids(clean))
         page = site.set_blocks(page_id, clean, self.clock.now())
         await self._save(site)
@@ -297,7 +303,9 @@ class ResolveSite(_Base):
         if site is None:
             return None
         if site.status == SiteStatus.SUSPENDED:
-            return ResolvedSite("suspended", str(site.id), str(site.slug), None)
+            return ResolvedSite("suspended", str(site.id), str(site.slug), None, str(site.owner_id))
         if site.status == SiteStatus.PUBLISHED and site.published is not None:
-            return ResolvedSite("published", str(site.id), str(site.slug), site.published)
+            return ResolvedSite(
+                "published", str(site.id), str(site.slug), site.published, str(site.owner_id)
+            )
         return None

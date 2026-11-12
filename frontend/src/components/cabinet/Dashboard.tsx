@@ -1,4 +1,4 @@
-import { Card } from "@/components/ui/Card";
+import { Card, CardLink } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
 import { Icon } from "@/components/ui/Icon";
 import { ru } from "@/i18n/ru";
@@ -42,29 +42,38 @@ export async function Dashboard({ searchParams }: { searchParams: Promise<{ slug
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <SitesList claimSlug={claimSlug} />
-        <Card className="flex flex-col gap-4">
-          <h2 className="flex items-baseline justify-between gap-3 font-display text-h3 font-medium">
-            {t.planTitle}
-            <Chip>{limits.plan_title}</Chip>
-          </h2>
-          <dl className="flex flex-col">
-            {[
-              [limits.max_sites, t.limitSites],
-              [limits.max_custom_domains, t.limitDomains],
-              [limits.max_upload_mb, t.limitUpload],
-            ].map(([value, label]) => (
-              <div key={label} className="border-b border-line py-3 last:border-0">
-                <dt className="sr-only">{label}</dt>
-                <dd className="flex items-baseline gap-3">
-                  <span className="font-display text-stat font-medium">{value}</span>
-                  <span className="text-ink-2" aria-hidden="true">
-                    {label}
-                  </span>
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </Card>
+        <div className="flex flex-col gap-6">
+          <CardLink href="/app/catalog" className="flex flex-col gap-2">
+            <span className="flex items-center justify-between gap-3">
+              <b className="font-display text-h3 font-medium">{ru.catalog.title}</b>
+              <Icon name="shelf" className="text-accent" />
+            </span>
+            <span className="text-ink-2">{t.catalogLead}</span>
+          </CardLink>
+          <Card className="flex flex-col gap-4">
+            <h2 className="flex items-baseline justify-between gap-3 font-display text-h3 font-medium">
+              {t.planTitle}
+              <Chip>{limits.plan_title}</Chip>
+            </h2>
+            <dl className="flex flex-col">
+              {[
+                [limits.max_sites, t.limitSites],
+                [limits.max_custom_domains, t.limitDomains],
+                [limits.max_upload_mb, t.limitUpload],
+              ].map(([value, label]) => (
+                <div key={label} className="border-b border-line py-3 last:border-0">
+                  <dt className="sr-only">{label}</dt>
+                  <dd className="flex items-baseline gap-3">
+                    <span className="font-display text-stat font-medium">{value}</span>
+                    <span className="text-ink-2" aria-hidden="true">
+                      {label}
+                    </span>
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </Card>
+        </div>
       </div>
     </div>
   );

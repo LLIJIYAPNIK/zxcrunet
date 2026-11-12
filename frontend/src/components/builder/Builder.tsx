@@ -20,6 +20,7 @@ import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 
+import { CatalogProvider } from "@/blocks/catalog-context";
 import { EDITORS } from "@/blocks/editors";
 import {
   BLOCK_TYPES,
@@ -36,6 +37,7 @@ import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { Segmented } from "@/components/ui/Segmented";
 import { Switch } from "@/components/ui/Switch";
+import { EMPTY_CATALOG, type Catalog } from "@/lib/catalog/catalog";
 import { cn } from "@/lib/cn";
 import { api, type Site } from "@/lib/api/client";
 import { ru } from "@/i18n/ru";
@@ -187,9 +189,14 @@ function PreviewFrame({
 
 // --- the builder ----------------------------------------------------------------
 
-type BuilderProps = { initial: Site; emailVerified: boolean };
+type BuilderProps = {
+  initial: Site;
+  emailVerified: boolean;
+  /** The owner's catalog (personal sites): preview content and title pickers. */
+  catalog?: Catalog;
+};
 
-export function Builder({ initial, emailVerified }: BuilderProps) {
+export function Builder({ initial, emailVerified, catalog = EMPTY_CATALOG }: BuilderProps) {
   const [site, setSite] = useState(initial);
   const [pageId, setPageId] = useState(initial.pages[0]?.id ?? "");
   const [blocksByPage, setBlocksByPage] = useState<Record<string, AnyBlock[]>>(() =>
@@ -363,9 +370,19 @@ export function Builder({ initial, emailVerified }: BuilderProps) {
       {/* top bar */}
       <div className="flex flex-col gap-4 rounded-lg border border-line bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-col gap-1">
-          <Link href={`/app/sites/${site.id}`} className="w-max text-sm text-ink-2 hover:text-ink">
-            ← {t.back}
-          </Link>
+          <span className="flex flex-wrap gap-x-5 gap-y-1">
+            <Link
+              href={`/app/sites/${site.id}`}
+              className="w-max text-sm text-ink-2 hover:text-ink"
+            >
+              ← {t.back}
+            </Link>
+            {site.kind === "personal" && (
+              <Link href="/app/catalog" className="w-max text-sm text-accent hover:text-ink">
+                {t.personal.catalogLink}
+              </Link>
+            )}
+          </span>
           <b className="truncate font-display text-lg font-medium">{site.title}</b>
           <span className="label" role="status" aria-live="polite">
             {live ? ru.sites.status.published : t.draft}
@@ -496,16 +513,18 @@ export function Builder({ initial, emailVerified }: BuilderProps) {
                     .join(" · ")}
                 </FormMessage>
               )}
-              <SelectedEditor
-                value={selected.settings}
-                onChange={(settings) =>
-                  update(
-                    blocks.map((b) =>
-                      b.id === selected.id ? ({ ...b, settings } as AnyBlock) : b,
-                    ),
-                  )
-                }
-              />
+              <CatalogProvider catalog={catalog}>
+                <SelectedEditor
+                  value={selected.settings}
+                  onChange={(settings) =>
+                    update(
+                      blocks.map((b) =>
+                        b.id === selected.id ? ({ ...b, settings } as AnyBlock) : b,
+                      ),
+                    )
+                  }
+                />
+              </CatalogProvider>
             </section>
           )}
           {!selected && blocks.length > 0 && <p className="text-sm text-muted">{t.selectHint}</p>}
@@ -541,7 +560,13 @@ export function Builder({ initial, emailVerified }: BuilderProps) {
           </div>
           <PreviewFrame device={device} onClickCapture={stopLinks}>
             {previewPage && (
-              <PublicSite slug={site.slug} content={content} page={previewPage} preview />
+              <PublicSite
+                slug={site.slug}
+                content={content}
+                page={previewPage}
+                catalog={catalog}
+                preview
+              />
             )}
           </PreviewFrame>
         </div>

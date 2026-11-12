@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/Switch";
 import { parseResponse } from "@/lib/api/client";
 import { ru } from "@/i18n/ru";
 
+import { useCatalog } from "./catalog-context";
 import type { Link, MediaRef } from "./schemas";
 
 const f = ru.builder.fields;
@@ -391,5 +392,116 @@ export function MediaField({
         </span>
       )}
     </div>
+  );
+}
+
+export function SelectField<V extends string>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: V;
+  options: readonly { value: V; label: string }[];
+  onChange: (value: V) => void;
+}) {
+  return (
+    <Field label={label}>
+      {({ id }) => (
+        <select
+          id={id}
+          value={value}
+          onChange={(e) => onChange(e.target.value as V)}
+          className="h-12 rounded-md border border-line-2 bg-surface px-3 text-base text-ink"
+        >
+          {options.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      )}
+    </Field>
+  );
+}
+
+/** Integer input; an empty field becomes `fallback` (or null when allowed). */
+export function NumberField<N extends number | null>({
+  label,
+  value,
+  onChange,
+  min,
+  max,
+  fallback,
+  hint,
+}: {
+  label: string;
+  value: N;
+  onChange: (value: N) => void;
+  min: number;
+  max: number;
+  fallback: N;
+  hint?: string;
+}) {
+  return (
+    <Field label={label} hint={hint}>
+      {({ id, describedBy }) => (
+        <Input
+          id={id}
+          type="number"
+          inputMode="numeric"
+          min={min}
+          max={max}
+          value={value ?? ""}
+          aria-describedby={describedBy}
+          onChange={(e) => {
+            const raw = e.target.value;
+            const n = Number.parseInt(raw, 10);
+            onChange((raw === "" || Number.isNaN(n) ? fallback : n) as N);
+          }}
+        />
+      )}
+    </Field>
+  );
+}
+
+/** A title from the owner's catalog (optionally only of one kind). */
+export function TitlePicker({
+  label,
+  value,
+  onChange,
+  kind,
+  allowEmpty = true,
+}: {
+  label: string;
+  value: string | null;
+  onChange: (value: string | null) => void;
+  kind?: string;
+  allowEmpty?: boolean;
+}) {
+  const index = useCatalog();
+  const titles = index.catalog.titles.filter((t) => !kind || t.kind === kind);
+  const kinds = ru.catalog.kindOne;
+  return (
+    <Field label={label} hint={titles.length ? undefined : ru.catalog.empty}>
+      {({ id, describedBy }) => (
+        <select
+          id={id}
+          value={value ?? ""}
+          aria-describedby={describedBy}
+          onChange={(e) => onChange(e.target.value || null)}
+          className="h-12 rounded-md border border-line-2 bg-surface px-3 text-base text-ink"
+        >
+          {(allowEmpty || !value) && <option value="">{ru.catalog.fields.noTitle}</option>}
+          {titles.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+              {t.year ? ` (${t.year})` : ""} · {kinds[t.kind]}
+            </option>
+          ))}
+        </select>
+      )}
+    </Field>
   );
 }

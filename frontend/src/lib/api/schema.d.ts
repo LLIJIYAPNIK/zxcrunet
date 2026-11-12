@@ -140,6 +140,96 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Catalog
+         * @description The signed-in user's titles (with their shelf entries) and posts.
+         */
+        get: operations["list_catalog_api_catalog_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/posts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Post */
+        post: operations["create_post_api_catalog_posts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/posts/{post_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Post */
+        put: operations["update_post_api_catalog_posts__post_id__put"];
+        post?: never;
+        /** Delete Post */
+        delete: operations["delete_post_api_catalog_posts__post_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/titles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Title */
+        post: operations["create_title_api_catalog_titles_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/titles/{title_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Title */
+        put: operations["update_title_api_catalog_titles__title_id__put"];
+        post?: never;
+        /** Delete Title */
+        delete: operations["delete_title_api_catalog_titles__title_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -191,6 +281,26 @@ export interface paths {
         put?: never;
         /** Upload */
         post: operations["upload_api_media_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/public/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Public Catalog
+         * @description Shelves and posts of the published personal site at `host`; 404 otherwise.
+         */
+        get: operations["public_catalog_api_public_catalog_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -384,7 +494,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "hero" | "facts" | "experience" | "projects" | "interests" | "contacts" | "resume";
+            type: "hero" | "facts" | "experience" | "projects" | "interests" | "contacts" | "resume" | "profile" | "now" | "shelf" | "characters" | "top" | "challenge" | "quotes" | "playlist" | "posts";
             /**
              * Version
              * @default 1
@@ -419,6 +529,50 @@ export interface components {
              */
             purpose: "image" | "resume";
         };
+        /** Boss */
+        Boss: {
+            /**
+             * Defeated
+             * @default false
+             */
+            defeated: boolean;
+            /** Name */
+            name: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /** CatalogOut */
+        CatalogOut: {
+            /** Max Posts */
+            max_posts: number;
+            /** Max Titles */
+            max_titles: number;
+            /** Posts */
+            posts: components["schemas"]["PostOut"][];
+            /** Titles */
+            titles: components["schemas"]["TitleOut"][];
+        };
+        /** Character */
+        Character: {
+            avatar?: components["schemas"]["MediaRef"] | null;
+            /**
+             * Favorite
+             * @default false
+             */
+            favorite: boolean;
+            /** Name */
+            name: string;
+            /** Parts */
+            parts?: string[];
+            /**
+             * Role
+             * @default
+             */
+            role: string;
+        };
         /** CreatePageIn */
         CreatePageIn: {
             /** Path */
@@ -445,10 +599,118 @@ export interface components {
             /** Password */
             password: string;
         };
+        /** Criterion */
+        Criterion: {
+            /** Name */
+            name: string;
+            /** Score */
+            score: number;
+        };
+        /** Details */
+        Details: {
+            /** Bosses */
+            bosses?: components["schemas"]["Boss"][];
+            /** Characters */
+            characters?: components["schemas"]["Character"][];
+            /** Criteria */
+            criteria?: components["schemas"]["Criterion"][];
+            /** Extras */
+            extras?: components["schemas"]["Extra"][];
+            /**
+             * Favorite Part
+             * @default
+             */
+            favorite_part: string;
+            /**
+             * Place
+             * @default
+             */
+            place: string;
+            /** Plot */
+            plot?: components["schemas"]["PlotSection"][];
+            /** Related */
+            related?: components["schemas"]["Related"][];
+            /** Screenshots */
+            screenshots?: components["schemas"]["MediaRef"][];
+            /** Tracks */
+            tracks?: components["schemas"]["Track"][];
+        };
         /** EmailIn */
         EmailIn: {
             /** Email */
             email: string;
+        };
+        /** EntryIn */
+        EntryIn: {
+            /** Details */
+            details?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Favorite
+             * @default false
+             */
+            favorite: boolean;
+            /** Finished On */
+            finished_on?: string | null;
+            /** Hours */
+            hours?: number | null;
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+            /** Progress */
+            progress?: number | null;
+            /** Progress Total */
+            progress_total?: number | null;
+            /** Rating */
+            rating?: number | null;
+            /** Started On */
+            started_on?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "planned" | "active" | "done" | "dropped";
+        };
+        /** EntryOut */
+        EntryOut: {
+            details: components["schemas"]["Details"];
+            /** Favorite */
+            favorite: boolean;
+            /** Finished On */
+            finished_on: string | null;
+            /** Hours */
+            hours: number | null;
+            /** Notes */
+            notes: string;
+            /** Progress */
+            progress: number | null;
+            /** Progress Total */
+            progress_total: number | null;
+            /** Rating */
+            rating: number | null;
+            /** Started On */
+            started_on: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "planned" | "active" | "done" | "dropped";
+        };
+        /**
+         * Extra
+         * @description A DLC, an expansion, a special: done or not.
+         */
+        Extra: {
+            /**
+             * Done
+             * @default false
+             */
+            done: boolean;
+            /** Name */
+            name: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -506,6 +768,20 @@ export interface components {
             /** Width */
             width: number | null;
         };
+        /** MediaRef */
+        MediaRef: {
+            /** Height */
+            height?: number | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Url */
+            url: string;
+            /** Width */
+            width?: number | null;
+        };
         /** PageOut */
         PageOut: {
             /** Blocks */
@@ -523,6 +799,74 @@ export interface components {
             position: number;
             /** Title */
             title: string;
+        };
+        /** PlotSection */
+        PlotSection: {
+            /**
+             * Label
+             * @default
+             */
+            label: string;
+            /**
+             * Spoiler
+             * @default true
+             */
+            spoiler: boolean;
+            /** Text */
+            text: string;
+        };
+        /** PostIn */
+        PostIn: {
+            /**
+             * Body
+             * @default
+             */
+            body: string;
+            /** Heading */
+            heading: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "review" | "note";
+            /** Published On */
+            published_on?: string | null;
+            /** Title Id */
+            title_id?: string | null;
+        };
+        /** PostOut */
+        PostOut: {
+            /** Body */
+            body: string;
+            /** Heading */
+            heading: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "review" | "note";
+            /**
+             * Published On
+             * Format: date
+             */
+            published_on: string;
+            /** Title Id */
+            title_id: string | null;
+        };
+        /**
+         * PublicCatalogOut
+         * @description Same shapes as the cabinet, without limits.
+         */
+        PublicCatalogOut: {
+            /** Posts */
+            posts: components["schemas"]["PostOut"][];
+            /** Titles */
+            titles: components["schemas"]["TitleOut"][];
         };
         /** PublicContentOut */
         PublicContentOut: {
@@ -567,6 +911,21 @@ export interface components {
              * @enum {string}
              */
             status: "ok" | "fail";
+        };
+        /** Related */
+        Related: {
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+            /** Title Id */
+            title_id?: string | null;
         };
         /** ResetPasswordIn */
         ResetPasswordIn: {
@@ -701,10 +1060,116 @@ export interface components {
             /** Second */
             second: string | null;
         };
+        /** TitleIn */
+        TitleIn: {
+            cover?: components["schemas"]["MediaRef"] | null;
+            /**
+             * Creator
+             * @default
+             */
+            creator: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            entry?: components["schemas"]["EntryIn"] | null;
+            /** Genres */
+            genres?: string[];
+            /**
+             * Is Series
+             * @default false
+             */
+            is_series: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "game" | "book" | "anime" | "series" | "film";
+            /** Name */
+            name: string;
+            /**
+             * Part Label
+             * @default
+             */
+            part_label: string;
+            /**
+             * Position
+             * @default 0
+             */
+            position: number;
+            /** Series Id */
+            series_id?: string | null;
+            /**
+             * Slug
+             * @default
+             */
+            slug: string;
+            /** Year */
+            year?: number | null;
+            /** Year End */
+            year_end?: number | null;
+        };
+        /** TitleOut */
+        TitleOut: {
+            cover: components["schemas"]["MediaRef"] | null;
+            /** Creator */
+            creator: string;
+            /** Description */
+            description: string;
+            entry: components["schemas"]["EntryOut"] | null;
+            /** Genres */
+            genres: string[];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Series */
+            is_series: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "game" | "book" | "anime" | "series" | "film";
+            /** Name */
+            name: string;
+            /** Part Label */
+            part_label: string;
+            /** Position */
+            position: number;
+            /** Series Id */
+            series_id: string | null;
+            /** Slug */
+            slug: string;
+            /** Updated At */
+            updated_at: string | null;
+            /** Year */
+            year: number | null;
+            /** Year End */
+            year_end: number | null;
+        };
         /** TokenIn */
         TokenIn: {
             /** Token */
             token: string;
+        };
+        /** Track */
+        Track: {
+            /**
+             * Artist
+             * @default
+             */
+            artist: string;
+            /**
+             * Part
+             * @default
+             */
+            part: string;
+            /** Title */
+            title: string;
+            /** Url */
+            url?: string | null;
         };
         /** UpdatePageIn */
         UpdatePageIn: {
@@ -993,6 +1458,220 @@ export interface operations {
             };
         };
     };
+    list_catalog_api_catalog_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogOut"];
+                };
+            };
+        };
+    };
+    create_post_api_catalog_posts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PostIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_post_api_catalog_posts__post_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PostIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_post_api_catalog_posts__post_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_title_api_catalog_titles_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TitleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TitleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_title_api_catalog_titles__title_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                title_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TitleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TitleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_title_api_catalog_titles__title_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                title_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     health_api_health_get: {
         parameters: {
             query?: never;
@@ -1062,6 +1741,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MediaOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_catalog_api_public_catalog_get: {
+        parameters: {
+            query: {
+                host: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicCatalogOut"];
                 };
             };
             /** @description Validation Error */

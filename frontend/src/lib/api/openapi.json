@@ -28,7 +28,16 @@
               "projects",
               "interests",
               "contacts",
-              "resume"
+              "resume",
+              "profile",
+              "now",
+              "shelf",
+              "characters",
+              "top",
+              "challenge",
+              "quotes",
+              "playlist",
+              "posts"
             ],
             "title": "Type",
             "type": "string"
@@ -106,6 +115,113 @@
         "title": "Body_upload_api_media_post",
         "type": "object"
       },
+      "Boss": {
+        "additionalProperties": false,
+        "properties": {
+          "defeated": {
+            "default": false,
+            "title": "Defeated",
+            "type": "boolean"
+          },
+          "name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "Boss",
+        "type": "object"
+      },
+      "CatalogOut": {
+        "properties": {
+          "max_posts": {
+            "title": "Max Posts",
+            "type": "integer"
+          },
+          "max_titles": {
+            "title": "Max Titles",
+            "type": "integer"
+          },
+          "posts": {
+            "items": {
+              "$ref": "#/components/schemas/PostOut"
+            },
+            "title": "Posts",
+            "type": "array"
+          },
+          "titles": {
+            "items": {
+              "$ref": "#/components/schemas/TitleOut"
+            },
+            "title": "Titles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "titles",
+          "posts",
+          "max_titles",
+          "max_posts"
+        ],
+        "title": "CatalogOut",
+        "type": "object"
+      },
+      "Character": {
+        "additionalProperties": false,
+        "properties": {
+          "avatar": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "favorite": {
+            "default": false,
+            "title": "Favorite",
+            "type": "boolean"
+          },
+          "name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "parts": {
+            "items": {
+              "maxLength": 24,
+              "type": "string"
+            },
+            "maxItems": 12,
+            "title": "Parts",
+            "type": "array"
+          },
+          "role": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "Character",
+        "type": "object"
+      },
       "CreatePageIn": {
         "properties": {
           "path": {
@@ -175,6 +291,112 @@
         "title": "CredentialsIn",
         "type": "object"
       },
+      "Criterion": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "score": {
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Score",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "score"
+        ],
+        "title": "Criterion",
+        "type": "object"
+      },
+      "Details": {
+        "additionalProperties": false,
+        "properties": {
+          "bosses": {
+            "items": {
+              "$ref": "#/components/schemas/Boss"
+            },
+            "maxItems": 40,
+            "title": "Bosses",
+            "type": "array"
+          },
+          "characters": {
+            "items": {
+              "$ref": "#/components/schemas/Character"
+            },
+            "maxItems": 24,
+            "title": "Characters",
+            "type": "array"
+          },
+          "criteria": {
+            "items": {
+              "$ref": "#/components/schemas/Criterion"
+            },
+            "maxItems": 8,
+            "title": "Criteria",
+            "type": "array"
+          },
+          "extras": {
+            "items": {
+              "$ref": "#/components/schemas/Extra"
+            },
+            "maxItems": 12,
+            "title": "Extras",
+            "type": "array"
+          },
+          "favorite_part": {
+            "default": "",
+            "maxLength": 24,
+            "title": "Favorite Part",
+            "type": "string"
+          },
+          "place": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Place",
+            "type": "string"
+          },
+          "plot": {
+            "items": {
+              "$ref": "#/components/schemas/PlotSection"
+            },
+            "maxItems": 12,
+            "title": "Plot",
+            "type": "array"
+          },
+          "related": {
+            "items": {
+              "$ref": "#/components/schemas/Related"
+            },
+            "maxItems": 8,
+            "title": "Related",
+            "type": "array"
+          },
+          "screenshots": {
+            "items": {
+              "$ref": "#/components/schemas/MediaRef"
+            },
+            "maxItems": 24,
+            "title": "Screenshots",
+            "type": "array"
+          },
+          "tracks": {
+            "items": {
+              "$ref": "#/components/schemas/Track"
+            },
+            "maxItems": 30,
+            "title": "Tracks",
+            "type": "array"
+          }
+        },
+        "title": "Details",
+        "type": "object"
+      },
       "EmailIn": {
         "properties": {
           "email": {
@@ -187,6 +409,246 @@
           "email"
         ],
         "title": "EmailIn",
+        "type": "object"
+      },
+      "EntryIn": {
+        "properties": {
+          "details": {
+            "additionalProperties": true,
+            "title": "Details",
+            "type": "object"
+          },
+          "favorite": {
+            "default": false,
+            "title": "Favorite",
+            "type": "boolean"
+          },
+          "finished_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished On"
+          },
+          "hours": {
+            "anyOf": [
+              {
+                "maximum": 1000000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hours"
+          },
+          "notes": {
+            "default": "",
+            "maxLength": 4000,
+            "title": "Notes",
+            "type": "string"
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "maximum": 1000000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress"
+          },
+          "progress_total": {
+            "anyOf": [
+              {
+                "maximum": 1000000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress Total"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "maximum": 10.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "started_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started On"
+          },
+          "status": {
+            "enum": [
+              "planned",
+              "active",
+              "done",
+              "dropped"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "EntryIn",
+        "type": "object"
+      },
+      "EntryOut": {
+        "properties": {
+          "details": {
+            "$ref": "#/components/schemas/Details"
+          },
+          "favorite": {
+            "title": "Favorite",
+            "type": "boolean"
+          },
+          "finished_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished On"
+          },
+          "hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hours"
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "string"
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress"
+          },
+          "progress_total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress Total"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "started_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started On"
+          },
+          "status": {
+            "enum": [
+              "planned",
+              "active",
+              "done",
+              "dropped"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "rating",
+          "hours",
+          "progress",
+          "progress_total",
+          "favorite",
+          "started_on",
+          "finished_on",
+          "notes",
+          "details"
+        ],
+        "title": "EntryOut",
+        "type": "object"
+      },
+      "Extra": {
+        "additionalProperties": false,
+        "description": "A DLC, an expansion, a special: done or not.",
+        "properties": {
+          "done": {
+            "default": false,
+            "title": "Done",
+            "type": "boolean"
+          },
+          "name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "Extra",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -332,6 +794,50 @@
         "title": "MediaOut",
         "type": "object"
       },
+      "MediaRef": {
+        "additionalProperties": false,
+        "properties": {
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "url": {
+            "maxLength": 200,
+            "pattern": "^/media/[A-Za-z0-9/_.-]+$",
+            "title": "Url",
+            "type": "string"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
+          }
+        },
+        "required": [
+          "id",
+          "url"
+        ],
+        "title": "MediaRef",
+        "type": "object"
+      },
       "PageOut": {
         "properties": {
           "blocks": {
@@ -372,6 +878,162 @@
           "blocks"
         ],
         "title": "PageOut",
+        "type": "object"
+      },
+      "PlotSection": {
+        "additionalProperties": false,
+        "properties": {
+          "label": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Label",
+            "type": "string"
+          },
+          "spoiler": {
+            "default": true,
+            "title": "Spoiler",
+            "type": "boolean"
+          },
+          "text": {
+            "maxLength": 2000,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "PlotSection",
+        "type": "object"
+      },
+      "PostIn": {
+        "properties": {
+          "body": {
+            "default": "",
+            "maxLength": 10000,
+            "title": "Body",
+            "type": "string"
+          },
+          "heading": {
+            "maxLength": 300,
+            "title": "Heading",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "review",
+              "note"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "published_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published On"
+          },
+          "title_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title Id"
+          }
+        },
+        "required": [
+          "kind",
+          "heading"
+        ],
+        "title": "PostIn",
+        "type": "object"
+      },
+      "PostOut": {
+        "properties": {
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "heading": {
+            "title": "Heading",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "review",
+              "note"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "published_on": {
+            "format": "date",
+            "title": "Published On",
+            "type": "string"
+          },
+          "title_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title Id"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "heading",
+          "body",
+          "title_id",
+          "published_on"
+        ],
+        "title": "PostOut",
+        "type": "object"
+      },
+      "PublicCatalogOut": {
+        "description": "Same shapes as the cabinet, without limits.",
+        "properties": {
+          "posts": {
+            "items": {
+              "$ref": "#/components/schemas/PostOut"
+            },
+            "title": "Posts",
+            "type": "array"
+          },
+          "titles": {
+            "items": {
+              "$ref": "#/components/schemas/TitleOut"
+            },
+            "title": "Titles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "titles",
+          "posts"
+        ],
+        "title": "PublicCatalogOut",
         "type": "object"
       },
       "PublicContentOut": {
@@ -484,6 +1146,37 @@
           "checks"
         ],
         "title": "ReadinessResponse",
+        "type": "object"
+      },
+      "Related": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Name",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Note",
+            "type": "string"
+          },
+          "title_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title Id"
+          }
+        },
+        "title": "Related",
         "type": "object"
       },
       "ResetPasswordIn": {
@@ -845,6 +1538,269 @@
         "title": "ThemeOut",
         "type": "object"
       },
+      "TitleIn": {
+        "properties": {
+          "cover": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "creator": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Creator",
+            "type": "string"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 2400,
+            "title": "Description",
+            "type": "string"
+          },
+          "entry": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EntryIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "genres": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 12,
+            "title": "Genres",
+            "type": "array"
+          },
+          "is_series": {
+            "default": false,
+            "title": "Is Series",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "game",
+              "book",
+              "anime",
+              "series",
+              "film"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          },
+          "part_label": {
+            "default": "",
+            "maxLength": 48,
+            "title": "Part Label",
+            "type": "string"
+          },
+          "position": {
+            "default": 0,
+            "title": "Position",
+            "type": "integer"
+          },
+          "series_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Series Id"
+          },
+          "slug": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Slug",
+            "type": "string"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "year_end": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year End"
+          }
+        },
+        "required": [
+          "kind",
+          "name"
+        ],
+        "title": "TitleIn",
+        "type": "object"
+      },
+      "TitleOut": {
+        "properties": {
+          "cover": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "creator": {
+            "title": "Creator",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "entry": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EntryOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "genres": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Genres",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_series": {
+            "title": "Is Series",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "game",
+              "book",
+              "anime",
+              "series",
+              "film"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "part_label": {
+            "title": "Part Label",
+            "type": "string"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "series_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Series Id"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "year_end": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year End"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "slug",
+          "year",
+          "year_end",
+          "creator",
+          "genres",
+          "description",
+          "cover",
+          "is_series",
+          "series_id",
+          "part_label",
+          "position",
+          "updated_at",
+          "entry"
+        ],
+        "title": "TitleOut",
+        "type": "object"
+      },
       "TokenIn": {
         "properties": {
           "token": {
@@ -858,6 +1814,46 @@
           "token"
         ],
         "title": "TokenIn",
+        "type": "object"
+      },
+      "Track": {
+        "additionalProperties": false,
+        "properties": {
+          "artist": {
+            "default": "",
+            "maxLength": 80,
+            "title": "Artist",
+            "type": "string"
+          },
+          "part": {
+            "default": "",
+            "maxLength": 24,
+            "title": "Part",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "Track",
         "type": "object"
       },
       "UpdatePageIn": {
@@ -1305,6 +2301,284 @@
         ]
       }
     },
+    "/api/catalog": {
+      "get": {
+        "description": "The signed-in user's titles (with their shelf entries) and posts.",
+        "operationId": "list_catalog_api_catalog_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Catalog",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/catalog/posts": {
+      "post": {
+        "operationId": "create_post_api_catalog_posts_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Post",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/catalog/posts/{post_id}": {
+      "delete": {
+        "operationId": "delete_post_api_catalog_posts__post_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "post_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Post Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Post",
+        "tags": [
+          "catalog"
+        ]
+      },
+      "put": {
+        "operationId": "update_post_api_catalog_posts__post_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "post_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Post Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Post",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/catalog/titles": {
+      "post": {
+        "operationId": "create_title_api_catalog_titles_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TitleIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TitleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Title",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/catalog/titles/{title_id}": {
+      "delete": {
+        "operationId": "delete_title_api_catalog_titles__title_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "title_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Title Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Title",
+        "tags": [
+          "catalog"
+        ]
+      },
+      "put": {
+        "operationId": "update_title_api_catalog_titles__title_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "title_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Title Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TitleIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TitleOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Title",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
     "/api/health": {
       "get": {
         "description": "Liveness: the process is up and serving requests.",
@@ -1397,6 +2671,50 @@
         "summary": "Upload",
         "tags": [
           "media"
+        ]
+      }
+    },
+    "/api/public/catalog": {
+      "get": {
+        "description": "Shelves and posts of the published personal site at `host`; 404 otherwise.",
+        "operationId": "public_catalog_api_public_catalog_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "host",
+            "required": true,
+            "schema": {
+              "maxLength": 253,
+              "title": "Host",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicCatalogOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Public Catalog",
+        "tags": [
+          "public"
         ]
       }
     },

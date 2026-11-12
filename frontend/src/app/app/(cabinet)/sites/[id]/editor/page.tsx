@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { Builder } from "@/components/builder/Builder";
 import { CabinetShell } from "@/components/cabinet/CabinetShell";
-import type { Site } from "@/lib/api/client";
+import type { Schemas, Site } from "@/lib/api/client";
 import { requireData, requireMe } from "@/lib/auth/session";
 import { ru } from "@/i18n/ru";
 
@@ -20,7 +20,13 @@ async function Editor({ params }: { params: Params }) {
     requireData<Site>(`/api/sites/${encodeURIComponent(id)}`, next),
   ]);
   if (!site) notFound();
-  return <Builder initial={site} emailVerified={me.user.email_verified} />;
+  const catalog =
+    site.kind === "personal"
+      ? await requireData<Schemas["CatalogOut"]>("/api/catalog", next)
+      : null;
+  return (
+    <Builder initial={site} emailVerified={me.user.email_verified} catalog={catalog ?? undefined} />
+  );
 }
 
 export default function EditorPage({ params }: { params: Params }) {

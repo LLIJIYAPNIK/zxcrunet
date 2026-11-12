@@ -10,60 +10,19 @@ import { Chip } from "@/components/ui/Chip";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { cn } from "@/lib/cn";
 
-import { anchorId, type AnyBlock, type ContactKind, type Link, type SettingsOf } from "./schemas";
+import { PERSONAL_RENDERERS } from "./personal";
+import { anchorId, type AnyBlock, type ContactKind } from "./schemas";
+import {
+  CWRAP,
+  SectionHead,
+  SmartLink,
+  accentLink,
+  externalProps,
+  type BlockProps as Props,
+  type RenderContext,
+} from "./ui";
 
-/** Equal side gutters inside the site container: 16 / 40 / 80 px. */
-export const CWRAP = "mx-auto w-full max-w-[1440px] px-4 @3xl:px-10 @7xl:px-20";
-
-export type RenderContext = {
-  /** `anna.zxc.ru.net` */
-  address: string;
-  siteTitle: string;
-};
-
-type Props<T extends AnyBlock["type"]> = {
-  id: string;
-  settings: SettingsOf<T>;
-  ctx: RenderContext;
-};
-
-const external = (url: string) => /^https?:\/\//i.test(url);
-
-function SmartLink({ link, className }: { link: Link; className?: string }) {
-  return (
-    <a
-      href={link.url}
-      className={className}
-      {...(external(link.url) ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-    >
-      {link.label}
-    </a>
-  );
-}
-
-function SectionHead({
-  label,
-  title,
-  aside,
-}: {
-  label?: string;
-  title?: string;
-  aside?: ReactNode;
-}) {
-  if (!label && !title && !aside) return null;
-  return (
-    <div className="mb-8 flex flex-col gap-4 @3xl:mb-12 @3xl:flex-row @3xl:items-end @3xl:justify-between @3xl:gap-6">
-      <div className="flex flex-col gap-3">
-        {label && <span className="label">{label}</span>}
-        {title && <h2 className="font-display text-ch2 font-medium">{title}</h2>}
-      </div>
-      {aside}
-    </div>
-  );
-}
-
-const accentLink =
-  "w-max bg-[linear-gradient(currentColor,currentColor)] bg-[length:0_1px] bg-[position:0_100%] bg-no-repeat pb-0.5 font-medium text-accent transition-[background-size] duration-300 ease-neon hover:bg-[length:100%_1px]";
+export { CWRAP, type RenderContext };
 
 function Hero({ id, settings: s, ctx }: Props<"hero">) {
   const name = s.card_name || ctx.siteTitle;
@@ -197,7 +156,7 @@ function Projects({ id, settings: s }: Props<"projects">) {
             <a
               key={i}
               href={p.link.url}
-              {...(external(p.link.url) ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+              {...externalProps(p.link.url)}
               className={cn(
                 card,
                 "transition-[transform,border-color,box-shadow] duration-200 ease-neon hover:-translate-y-0.5 hover:border-line-2 hover:shadow-[inset_0_1px_0_rgba(255,255,255,.05),0_12px_32px_rgba(0,0,0,.35)]",
@@ -256,7 +215,7 @@ function Contacts({ id, settings: s }: Props<"contacts">) {
             <a
               key={i}
               href={c.url}
-              {...(external(c.url) ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+              {...externalProps(c.url)}
               className="group/c flex min-h-20 items-center gap-4 border-b border-line py-4 transition-[padding] duration-200 ease-neon first:border-t hover:pl-2"
             >
               <span className="grid size-10 shrink-0 place-items-center rounded-[10px] bg-[#eef1f6] text-[#0a0d14]">
@@ -301,6 +260,7 @@ const RENDERERS: { [T in AnyBlock["type"]]: (props: Props<T>) => ReactNode } = {
   interests: Interests,
   contacts: Contacts,
   resume: Resume,
+  ...PERSONAL_RENDERERS,
 };
 
 /** Renders visible blocks; a block that fails to render never breaks the page. */

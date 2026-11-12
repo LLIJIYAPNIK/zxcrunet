@@ -1,12 +1,20 @@
 import Link from "next/link";
 
 import { CWRAP, Blocks } from "@/blocks/renderers";
+import { TitlePage } from "@/components/catalog/TitlePage";
 import { META, anchorId, type AnyBlock } from "@/blocks/schemas";
 import { MadeWith } from "@/components/brand/MadeWith";
 import { ThemeScope } from "@/components/theme/ThemeScope";
 import { SERVICE_DOMAIN } from "@/config/site";
 import { cn } from "@/lib/cn";
 import type { Schemas } from "@/lib/api/client";
+import {
+  CatalogIndex,
+  EMPTY_CATALOG,
+  KIND_PATH,
+  type Catalog,
+  type Title,
+} from "@/lib/catalog/catalog";
 import { ru } from "@/i18n/ru";
 
 type Content = Schemas["PublicContentOut"];
@@ -16,6 +24,10 @@ type PublicSiteProps = {
   slug: string;
   content: Content;
   page: PublicPage;
+  /** The owner's shelves and posts (personal sites). */
+  catalog?: Catalog;
+  /** Render the page of this title instead of the page's blocks. */
+  title?: Title;
   /** Editor preview: links do not leave the editor, no entrance animation. */
   preview?: boolean;
 };
@@ -44,13 +56,30 @@ function navItems(content: Content, page: PublicPage, blocks: readonly AnyBlock[
     });
 }
 
+/** On a title page: the section page of its kind (when the site has one) and the title. */
+function titleNav(content: Content, title: Title): NavItem[] {
+  const section = content.pages.find((p) => p.path === KIND_PATH[title.kind]);
+  const items: NavItem[] = [{ href: "/", label: content.pages[0]?.title ?? content.title }];
+  if (section) items.push({ href: href(section.path), label: section.title });
+  items.push({ href: "#", label: title.name, current: true });
+  return items;
+}
+
 /** A published card: address bar, navigation, blocks, «Сделано на zxcrunet». */
-export function PublicSite({ slug, content, page, preview = false }: PublicSiteProps) {
+export function PublicSite({
+  slug,
+  content,
+  page,
+  catalog = EMPTY_CATALOG,
+  title,
+  preview = false,
+}: PublicSiteProps) {
   const t = ru.publicSite;
   const blocks = page.blocks as unknown as AnyBlock[];
   const visible = blocks.filter((b) => !b.hidden);
-  const nav = navItems(content, page, blocks);
+  const nav = title ? titleNav(content, title) : navItems(content, page, blocks);
   const address = `${slug}.${SERVICE_DOMAIN}`;
+  const index = new CatalogIndex(catalog);
 
   return (
     <ThemeScope
@@ -108,7 +137,9 @@ export function PublicSite({ slug, content, page, preview = false }: PublicSiteP
       </header>
 
       <main className={cn("flex flex-1 flex-col", preview && "[&_[data-enter]>*]:animate-none")}>
-        {visible.length === 0 ? (
+        {title ? (
+          <TitlePage title={title} index={index} />
+        ) : visible.length === 0 ? (
           <div className={cn(CWRAP, "flex flex-col gap-4 py-16 @3xl:py-24")} data-enter>
             {page.path && <span className="label">{page.title}</span>}
             <h1 className="font-display text-ch1 font-medium">{content.title}</h1>
@@ -118,7 +149,10 @@ export function PublicSite({ slug, content, page, preview = false }: PublicSiteP
             </div>
           </div>
         ) : (
-          <Blocks blocks={visible} ctx={{ address, siteTitle: content.title }} />
+          <Blocks
+            blocks={visible}
+            ctx={{ address, siteTitle: content.title, catalog: index, preview }}
+          />
         )}
       </main>
 

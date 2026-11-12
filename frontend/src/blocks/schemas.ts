@@ -121,6 +121,101 @@ export const resumeSchema = z.object({
   file: mediaRefSchema.nullable().default(null),
 });
 
+// --- personal blocks: presentation only, the data comes from the owner's catalog ---------
+
+export const TITLE_KINDS = ["game", "book", "anime", "series", "film"] as const;
+const titleKind = z.enum(TITLE_KINDS);
+const uuid = z.string().uuid();
+
+export const profileSchema = z.object({
+  cover: mediaRefSchema.nullable().default(null),
+  avatar: mediaRefSchema.nullable().default(null),
+  title: line.min(1, "Введите заголовок"),
+  lead: text.default(""),
+  mood: short.default(""),
+});
+
+export const nowSchema = z.object({
+  label: short.default(""),
+  kinds: z
+    .array(titleKind)
+    .min(1, "Выберите хотя бы одну полку")
+    .max(5)
+    .default([...TITLE_KINDS]),
+  limit: z.number().int().min(1).max(6).default(3),
+});
+
+export const SHELF_STYLES = ["cards", "bento", "spines", "tickets", "tracker"] as const;
+export type ShelfStyle = (typeof SHELF_STYLES)[number];
+
+export const shelfSchema = z.object({
+  kind: titleKind,
+  style: z.enum(SHELF_STYLES).default("cards"),
+  label: short.default(""),
+  title: line.default(""),
+  lead: text.default(""),
+  controls: z.boolean().default(false),
+  limit: z.number().int().min(1).max(60).default(12),
+  all_link: linkSchema.nullable().default(null),
+});
+
+export const charactersSchema = z.object({
+  label: short.default(""),
+  title: line.default(""),
+});
+
+export const topSchema = z.object({
+  label: short.default(""),
+  title: line.default(""),
+  items: z.array(uuid).min(1, "Выберите хотя бы один тайтл").max(10),
+});
+
+export const challengeSchema = z.object({
+  label: short.default(""),
+  kind: titleKind.default("book"),
+  year: z.number().int().min(2000).max(2100),
+  goal: z.number().int().min(1, "Цель — хотя бы 1").max(1000),
+});
+
+export const quotesSchema = z.object({
+  label: short.default(""),
+  title: line.default(""),
+  items: z
+    .array(
+      z.object({
+        text: z.string().trim().min(1, "Введите цитату").max(1200),
+        source: line.default(""),
+        title_id: uuid.nullable().default(null),
+      }),
+    )
+    .min(1)
+    .max(20),
+});
+
+export const playlistSchema = z.object({
+  label: short.default(""),
+  title: line.default(""),
+  lead: text.default(""),
+  items: z
+    .array(
+      z.object({
+        track: short.min(1, "Введите название трека"),
+        artist: short.default(""),
+        title_id: uuid.nullable().default(null),
+        url: linkSchema.shape.url.nullable().default(null),
+      }),
+    )
+    .min(1)
+    .max(30),
+});
+
+export const postsSchema = z.object({
+  label: short.default(""),
+  title: line.default(""),
+  kind: z.enum(["all", "review", "note"]).default("all"),
+  limit: z.number().int().min(1).max(24).default(6),
+});
+
 export const SCHEMAS = {
   hero: heroSchema,
   facts: factsSchema,
@@ -129,6 +224,15 @@ export const SCHEMAS = {
   interests: interestsSchema,
   contacts: contactsSchema,
   resume: resumeSchema,
+  profile: profileSchema,
+  now: nowSchema,
+  shelf: shelfSchema,
+  characters: charactersSchema,
+  top: topSchema,
+  challenge: challengeSchema,
+  quotes: quotesSchema,
+  playlist: playlistSchema,
+  posts: postsSchema,
 } as const;
 
 export type BlockType = keyof typeof SCHEMAS;
@@ -230,6 +334,109 @@ export const META: { [T in BlockType]: BlockMeta & { type: T } } = {
     kinds: ["business"],
     summary: (s: SettingsOf<"resume">) => s.label || "файл PDF",
   },
+  profile: {
+    type: "profile",
+    title: "Шапка с обложкой",
+    description: "Обложка, аватар, заголовок, пара слов о себе и статус настроения.",
+    icon: "user",
+    kinds: ["personal"],
+    summary: (s: SettingsOf<"profile">) => s.title || "обложка и аватар",
+  },
+  now: {
+    type: "now",
+    title: "Сейчас",
+    description: "Что играю, читаю и смотрю, с прогрессом. Берётся с полок.",
+    icon: "eye",
+    kinds: ["personal"],
+    summary: (s: SettingsOf<"now">) => plural(s.limit, "карточка", "карточки", "карточек"),
+  },
+  shelf: {
+    type: "shelf",
+    title: "Полка",
+    description: "Игры, книги, аниме, сериалы или фильмы: сетка, бенто, корешки, билеты, трекер.",
+    icon: "shelf",
+    kinds: ["personal"],
+    summary: (s: SettingsOf<"shelf">) =>
+      [KIND_TITLES[s.kind], STYLE_TITLES[s.style], s.controls ? "с фильтрами" : ""]
+        .filter(Boolean)
+        .join(" · "),
+    navLabel: (s: SettingsOf<"shelf">) => s.title || KIND_TITLES[s.kind],
+  },
+  characters: {
+    type: "characters",
+    title: "Мои персонажи",
+    description: "Любимые персонажи из всех вселенных, кольцами-аватарами.",
+    icon: "heart",
+    kinds: ["personal"],
+    summary: () => "отмеченные в тайтлах",
+  },
+  top: {
+    type: "top",
+    title: "Личный топ",
+    description: "Лучшее первым, с крупными номерами.",
+    icon: "trophy",
+    kinds: ["personal"],
+    summary: (s: SettingsOf<"top">) => plural(s.items.length, "тайтл", "тайтла", "тайтлов"),
+  },
+  challenge: {
+    type: "challenge",
+    title: "Челлендж года",
+    description: "Сколько прочитано или пройдено из плана, по месяцам.",
+    icon: "check",
+    kinds: ["personal"],
+    summary: (s: SettingsOf<"challenge">) => `${s.year}: цель ${s.goal}`,
+  },
+  quotes: {
+    type: "quotes",
+    title: "Цитатник",
+    description: "Цитаты с источником и ссылкой на тайтл.",
+    icon: "quote",
+    kinds: ["personal"],
+    summary: (s: SettingsOf<"quotes">) => plural(s.items.length, "цитата", "цитаты", "цитат"),
+  },
+  playlist: {
+    type: "playlist",
+    title: "Плейлист",
+    description: "Саундтреки со всех полок, каждый ведёт на свой тайтл.",
+    icon: "music",
+    kinds: ["personal"],
+    summary: (s: SettingsOf<"playlist">) => plural(s.items.length, "трек", "трека", "треков"),
+  },
+  posts: {
+    type: "posts",
+    title: "Лента постов",
+    description: "Рецензии и заметки; пост о тайтле показывает его карточку.",
+    icon: "send",
+    kinds: ["personal"],
+    summary: (s: SettingsOf<"posts">) =>
+      s.kind === "all" ? "все посты" : s.kind === "review" ? "рецензии" : "заметки",
+    navLabel: (s: SettingsOf<"posts">) => s.title || "Посты",
+  },
+};
+
+export const KIND_TITLES: Record<(typeof TITLE_KINDS)[number], string> = {
+  game: "Игры",
+  book: "Книги",
+  anime: "Аниме",
+  series: "Сериалы",
+  film: "Фильмы",
+};
+
+export const STYLE_TITLES: Record<ShelfStyle, string> = {
+  cards: "сетка карточек",
+  bento: "бенто",
+  spines: "корешки",
+  tickets: "билеты",
+  tracker: "трекер сезонов",
+};
+
+/** The style each shelf looks best in, as in the reference «Профиль · личное». */
+export const STYLE_FOR_KIND: Record<(typeof TITLE_KINDS)[number], ShelfStyle> = {
+  game: "bento",
+  book: "spines",
+  anime: "cards",
+  series: "tracker",
+  film: "tickets",
 };
 
 export const BLOCK_TYPES = Object.keys(META) as BlockType[];
@@ -263,6 +470,28 @@ export function defaultSettings<T extends BlockType>(type: T, siteTitle: string)
       ],
     },
     resume: { label: "Скачать резюме в PDF", file: null },
+    profile: profileSchema.parse({ title: siteTitle || "Обо мне" }),
+    now: nowSchema.parse({}),
+    shelf: shelfSchema.parse({ kind: "game", style: "bento", title: "Игры" }),
+    characters: charactersSchema.parse({
+      label: "Из всех вселенных сразу",
+      title: "Мои персонажи",
+    }),
+    // Valid only once a title is picked: the editor shows the list right away.
+    top: { label: "Личный топ", title: "Аниме", items: [] },
+    challenge: challengeSchema.parse({
+      label: "Челлендж года",
+      year: new Date().getFullYear(),
+      goal: 12,
+    }),
+    quotes: { label: "", title: "Цитатник", items: [{ text: "", source: "", title_id: null }] },
+    playlist: {
+      label: "Саундтреки со всех полок",
+      title: "Плейлист",
+      lead: "Каждый трек ведёт на свой тайтл.",
+      items: [{ track: "", artist: "", title_id: null, url: null }],
+    },
+    posts: postsSchema.parse({ label: "Лента", title: "Посты" }),
   };
   return defaults[type] as SettingsOf<T>;
 }

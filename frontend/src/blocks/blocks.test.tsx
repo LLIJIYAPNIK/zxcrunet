@@ -1,6 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
+import { CatalogIndex, EMPTY_CATALOG } from "@/lib/catalog/catalog";
+
 import { Blocks } from "./renderers";
 import { SAMPLE_BUSINESS_BLOCKS } from "./sample";
 import {
@@ -14,7 +16,11 @@ import {
   type AnyBlock,
 } from "./schemas";
 
-const ctx = { address: "anna.zxc.ru.net", siteTitle: "Анна Волкова" };
+const ctx = {
+  address: "anna.zxc.ru.net",
+  siteTitle: "Анна Волкова",
+  catalog: new CatalogIndex(EMPTY_CATALOG),
+};
 
 describe("block registry", () => {
   it("has metadata, a schema and a default for every type", () => {
@@ -22,7 +28,9 @@ describe("block registry", () => {
       expect(META[type].title).toBeTruthy();
       expect(SCHEMAS[type]).toBeDefined();
       const result = SCHEMAS[type].safeParse(defaultSettings(type, "Анна"));
-      expect(result.success, `${type} default is valid`).toBe(true);
+      // These start with an empty item for the owner to fill in (autosave waits for it).
+      const waitsForInput = ["top", "quotes", "playlist"].includes(type);
+      expect(result.success, `${type} default is valid`).toBe(!waitsForInput);
     }
   });
 

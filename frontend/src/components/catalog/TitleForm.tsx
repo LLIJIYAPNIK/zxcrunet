@@ -19,6 +19,7 @@ import type { MediaRef } from "@/blocks/schemas";
 import { FormMessage } from "@/components/auth/AuthShell";
 import { siteErrorText } from "@/components/sites/errors";
 import { Button } from "@/components/ui/Button";
+import { useConfirm } from "@/components/ui/Dialog";
 import { Field, Input } from "@/components/ui/Field";
 import { api, type Schemas } from "@/lib/api/client";
 import {
@@ -218,6 +219,7 @@ export function TitleForm({
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
+  const { confirm, dialog } = useConfirm();
   const set = (patch: Partial<Form>) => {
     setForm((v) => ({ ...v, ...patch }));
     setSaved(false);
@@ -258,7 +260,13 @@ export function TitleForm({
   }
 
   async function remove() {
-    if (!initial || !window.confirm(c.removeTitleConfirm.replace("{name}", initial.name))) return;
+    if (!initial) return;
+    const ok = await confirm({
+      title: c.removeTitleConfirm.replace("{name}", initial.name),
+      confirmLabel: ru.dialog.remove,
+      danger: true,
+    });
+    if (!ok) return;
     const result = await api.delete("/api/catalog/titles/{title_id}", {
       path: { title_id: initial.id },
     });
@@ -268,6 +276,7 @@ export function TitleForm({
 
   return (
     <CatalogProvider catalog={catalog}>
+      {dialog}
       <form
         className="mx-auto flex max-w-3xl flex-col gap-6"
         onSubmit={(e) => {

@@ -5,7 +5,7 @@ import { cn } from "@/lib/cn";
 
 import { Icon } from "./Icon";
 
-type Variant = "primary" | "secondary" | "ghost";
+type Variant = "primary" | "secondary" | "ghost" | "danger";
 type Size = "md" | "sm";
 
 const base =
@@ -18,6 +18,7 @@ const variants: Record<Variant, string> = {
   primary: "bg-accent text-accent-ink hover:bg-[color-mix(in_srgb,var(--accent)_86%,#fff)]",
   secondary: "border border-line-2 text-ink hover:border-ink",
   ghost: "text-ink-2 hover:text-ink",
+  danger: "bg-[#ff5d6c] text-[#0a0d14] hover:bg-[color-mix(in_srgb,#ff5d6c_86%,#fff)]",
 };
 
 const sizes: Record<Size, string> = {

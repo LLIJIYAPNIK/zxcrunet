@@ -18,6 +18,15 @@ export const PRESETS: readonly PalettePreset[] = [
   { id: "lime", name: "Кислотный лайм", accent: "#b6ff2e", second: "#ff4f8b" },
   { id: "orange", name: "Лазерный оранж", accent: "#ff7a1a", second: "#2ee6ff" },
   { id: "mint", name: "Мятный", accent: "#3ddc7a", second: "#ffb545" },
+  { id: "violet", name: "Ультрафиолет", accent: "#a98bff", second: "#ffe14d" },
+  { id: "gold", name: "Золото", accent: "#ffc93d", second: "#5ab9fc" },
+  { id: "scarlet", name: "Алый", accent: "#ff5a5a", second: "#2ee6ff" },
+  { id: "teal", name: "Бирюза", accent: "#2dd4bf", second: "#ff7a1a" },
+  { id: "sakura", name: "Сакура", accent: "#ffa3c7", second: "#8ef5c6" },
+  { id: "ice", name: "Лёд", accent: "#a8e6ff", second: "#ff8fb1" },
+  { id: "coral", name: "Коралл", accent: "#ff8a65", second: "#4dd0e1" },
+  { id: "toxic", name: "Токсик", accent: "#39ff14", second: "#ff3df0" },
+  { id: "mono", name: "Монохром", accent: "#e9edf3", second: "#5ab9fc" },
 ];
 
 export const DEFAULT_PRESET = PRESETS[0];

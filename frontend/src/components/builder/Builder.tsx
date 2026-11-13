@@ -34,6 +34,7 @@ import { FormMessage } from "@/components/auth/AuthShell";
 import { PublicSite } from "@/components/public/PublicSite";
 import { siteErrorText } from "@/components/sites/errors";
 import { Button } from "@/components/ui/Button";
+import { useConfirm } from "@/components/ui/Dialog";
 import { Icon } from "@/components/ui/Icon";
 import { Segmented } from "@/components/ui/Segmented";
 import { Switch } from "@/components/ui/Switch";
@@ -198,6 +199,7 @@ type BuilderProps = {
 
 export function Builder({ initial, emailVerified, catalog = EMPTY_CATALOG }: BuilderProps) {
   const [site, setSite] = useState(initial);
+  const { confirm, dialog } = useConfirm();
   const [pageId, setPageId] = useState(initial.pages[0]?.id ?? "");
   const [blocksByPage, setBlocksByPage] = useState<Record<string, AnyBlock[]>>(() =>
     Object.fromEntries(initial.pages.map((p) => [p.id, p.blocks as unknown as AnyBlock[]])),
@@ -367,6 +369,7 @@ export function Builder({ initial, emailVerified, catalog = EMPTY_CATALOG }: Bui
 
   return (
     <div className="flex flex-col gap-6">
+      {dialog}
       {/* top bar */}
       <div className="flex flex-col gap-4 rounded-lg border border-line bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-col gap-1">
@@ -469,11 +472,16 @@ export function Builder({ initial, emailVerified, catalog = EMPTY_CATALOG }: Bui
                         blocks.map((b) => (b.id === block.id ? { ...b, hidden: !visible } : b)),
                       )
                     }
-                    onRemove={() => {
-                      if (!window.confirm(t.removeConfirm.replace("{block}", titleOf(block))))
-                        return;
+                    onRemove={async () => {
+                      const ok = await confirm({
+                        title: t.removeConfirm.replace("{block}", titleOf(block)),
+                        text: t.removeConfirmText,
+                        confirmLabel: ru.dialog.remove,
+                        danger: true,
+                      });
+                      if (!ok) return;
                       update(blocks.filter((b) => b.id !== block.id));
-                      if (selectedId === block.id) setSelectedId(null);
+                      setSelectedId((id) => (id === block.id ? null : id));
                     }}
                   />
                 ))}

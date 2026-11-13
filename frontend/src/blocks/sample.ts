@@ -22,6 +22,7 @@ export const SAMPLE_BUSINESS_BLOCKS: AnyBlock[] = [
       card_role: "Product / UX дизайнер",
       avatar: null,
       chips: ["Figma", "UX", "Research"],
+      pattern: "rings",
     },
   },
   {

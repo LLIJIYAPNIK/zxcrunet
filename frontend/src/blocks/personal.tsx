@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 
 import { CoverArt, Segments, Thumb, TitleCard } from "@/components/catalog/pieces";
 import { ShelfBrowser } from "@/components/catalog/ShelfBrowser";
+import { Pattern } from "@/components/public/Pattern";
 import { Chip } from "@/components/ui/Chip";
 import { Icon } from "@/components/ui/Icon";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -88,10 +89,7 @@ function Profile({ id, settings: s, ctx }: Props<"profile">) {
         {s.cover ? (
           <Cover media={s.cover} sizes="100vw" className="object-[50%_40%]" />
         ) : (
-          <span
-            aria-hidden="true"
-            className="absolute inset-0 bg-[radial-gradient(90%_140%_at_20%_100%,color-mix(in_srgb,var(--accent)_22%,transparent),transparent_60%),radial-gradient(60%_120%_at_90%_0%,color-mix(in_srgb,var(--second)_16%,transparent),transparent_60%)]"
-          />
+          <Pattern pattern={s.pattern ?? "glow"} fade="top" />
         )}
       </div>
       <div className={CWRAP}>

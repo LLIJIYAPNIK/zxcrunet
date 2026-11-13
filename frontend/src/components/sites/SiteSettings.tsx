@@ -5,17 +5,21 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent, type ReactNode } from "react";
 
 import { FormMessage } from "@/components/auth/AuthShell";
-import { PalettePicker, type PaletteChoice } from "@/components/theme/PalettePicker";
+import {
+  PalettePicker,
+  choiceFromColors,
+  type PaletteChoice,
+} from "@/components/theme/PalettePicker";
 import { ThemeScope } from "@/components/theme/ThemeScope";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
+import { useConfirm } from "@/components/ui/Dialog";
 import { Field, Input, Textarea } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
 import { displayAddress, siteUrl } from "@/config/site";
 import { api, type ApiResult, type Site, type SitePage } from "@/lib/api/client";
-import { PRESETS } from "@/lib/theme/palette";
 import { ru } from "@/i18n/ru";
 
 import { siteErrorText } from "./errors";
@@ -27,10 +31,7 @@ const t = ru.sites;
 type Notice = { tone: "ok" | "error"; text: string } | null;
 
 function choiceOf(site: Site): PaletteChoice {
-  const preset = PRESETS.find((p) => p.accent === site.theme.accent);
-  return preset
-    ? { presetId: preset.id, accent: preset.accent, second: preset.second }
-    : { presetId: null, accent: site.theme.accent, second: site.theme.second ?? undefined };
+  return choiceFromColors(site.theme.accent, site.theme.second);
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -60,6 +61,7 @@ export function SiteSettings({ initial, emailVerified }: SiteSettingsProps) {
   const [site, setSite] = useState(initial);
   const [notice, setNotice] = useState<Notice>(null);
   const [busy, setBusy] = useState(false);
+  const { confirm, dialog } = useConfirm();
 
   async function run<T>(action: () => Promise<ApiResult<T>>, onOk: (data: T) => void) {
     setBusy(true);
@@ -156,9 +158,13 @@ export function SiteSettings({ initial, emailVerified }: SiteSettingsProps) {
   }
 
   const deleteSite = async () => {
-    if (!window.confirm(t.edit.deleteConfirm.replace("{address}", displayAddress(site.slug)))) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: t.edit.deleteTitle,
+      text: t.edit.deleteConfirm.replace("{address}", displayAddress(site.slug)),
+      confirmLabel: ru.dialog.remove,
+      danger: true,
+    });
+    if (!confirmed) return;
     const ok = await run(
       () => api.delete("/api/sites/{site_id}", { path }),
       () => undefined,
@@ -171,6 +177,7 @@ export function SiteSettings({ initial, emailVerified }: SiteSettingsProps) {
 
   return (
     <div className="flex flex-col gap-8">
+      {dialog}
       <div className="flex flex-col gap-4">
         <Link href="/app" className="w-max text-sm text-ink-2 hover:text-ink">
           ← {t.back}

@@ -62,6 +62,7 @@ function Hero({ id, settings: s, ctx }: Props<"hero">) {
           address={ctx.address}
           chips={s.chips}
           avatarUrl={s.avatar?.url}
+          pattern={s.pattern}
         />
       )}
     </header>

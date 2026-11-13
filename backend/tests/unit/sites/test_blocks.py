@@ -36,6 +36,17 @@ def test_valid_blocks_are_normalised() -> None:
     assert hero["hidden"] is False
     assert hero["settings"]["title"] == "Анна Волкова, продуктовый дизайнер"
     assert hero["settings"]["secondary"] is None
+    assert hero["settings"]["pattern"] == "rings"
+
+
+def test_card_and_cover_patterns() -> None:
+    [hero] = validate_blocks([block("hero", {**HERO, "pattern": "circuit"})])
+    [profile] = validate_blocks([block("profile", {"title": "Обо мне"})], "personal")
+
+    assert hero["settings"]["pattern"] == "circuit"
+    assert profile["settings"]["pattern"] == "glow"
+    with pytest.raises(InvalidBlockError):
+        validate_blocks([block("hero", {**HERO, "pattern": "url(javascript:x)"})])
 
 
 @pytest.mark.parametrize(

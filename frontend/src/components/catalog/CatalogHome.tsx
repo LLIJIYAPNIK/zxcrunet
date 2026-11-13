@@ -10,6 +10,7 @@ import { TitlePicker } from "@/blocks/fields";
 import { FormMessage } from "@/components/auth/AuthShell";
 import { siteErrorText } from "@/components/sites/errors";
 import { Button, ButtonLink } from "@/components/ui/Button";
+import { useConfirm } from "@/components/ui/Dialog";
 import { Field, Input } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
 import { api } from "@/lib/api/client";
@@ -84,6 +85,7 @@ function Posts({ catalog }: { catalog: Catalog }) {
   const router = useRouter();
   const [draft, setDraft] = useState<Draft | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { confirm, dialog } = useConfirm();
   const index = new CatalogIndex(catalog);
 
   async function save() {
@@ -108,7 +110,12 @@ function Posts({ catalog }: { catalog: Catalog }) {
   }
 
   async function remove(post: Post) {
-    if (!window.confirm(c.removePostConfirm.replace("{name}", post.heading))) return;
+    const ok = await confirm({
+      title: c.removePostConfirm.replace("{name}", post.heading),
+      confirmLabel: ru.dialog.remove,
+      danger: true,
+    });
+    if (!ok) return;
     const result = await api.delete("/api/catalog/posts/{post_id}", { path: { post_id: post.id } });
     if (result.ok) router.refresh();
     else setError(siteErrorText(result.error.code));
@@ -116,6 +123,7 @@ function Posts({ catalog }: { catalog: Catalog }) {
 
   return (
     <div className="flex flex-col gap-4">
+      {dialog}
       {!draft && (
         <Button className="self-start" onClick={() => setDraft(emptyDraft())}>
           <Icon name="plus" size={18} />

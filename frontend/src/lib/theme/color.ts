@@ -63,6 +63,34 @@ export function hslToHex({ h, s, l }: Hsl): string {
   return rgbToHex([f(0) * 255, f(8) * 255, f(4) * 255]);
 }
 
+/** HSV (the colour wheel): h in degrees [0, 360), s and v in [0, 1]. */
+export type Hsv = { h: number; s: number; v: number };
+
+export function rgbToHsv([r8, g8, b8]: Rgb): Hsv {
+  const r = r8 / 255;
+  const g = g8 / 255;
+  const b = b8 / 255;
+  const max = Math.max(r, g, b);
+  const d = max - Math.min(r, g, b);
+  let h = 0;
+  if (d !== 0) {
+    if (max === r) h = ((g - b) / d) % 6;
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h *= 60;
+    if (h < 0) h += 360;
+  }
+  return { h, s: max === 0 ? 0 : d / max, v: max };
+}
+
+export function hsvToRgb({ h, s, v }: Hsv): Rgb {
+  const f = (n: number) => {
+    const k = (n + h / 60) % 6;
+    return (v - v * s * Math.max(0, Math.min(k, 4 - k, 1))) * 255;
+  };
+  return [Math.round(f(5)), Math.round(f(3)), Math.round(f(1))];
+}
+
 /** WCAG relative luminance. */
 export function luminance(hex: string): number {
   const [r, g, b] = hexToRgb(hex).map((c) => {

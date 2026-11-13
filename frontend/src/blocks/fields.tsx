@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
+import { Pattern } from "@/components/public/Pattern";
 import { siteErrorText } from "@/components/sites/errors";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
@@ -10,6 +11,8 @@ import { Field, Input, Textarea } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
 import { Switch } from "@/components/ui/Switch";
 import { parseResponse } from "@/lib/api/client";
+import { cn } from "@/lib/cn";
+import { PATTERNS, type PatternId } from "@/lib/theme/patterns";
 import { ru } from "@/i18n/ru";
 
 import { useCatalog } from "./catalog-context";
@@ -423,6 +426,50 @@ export function SelectField<V extends string>({
         </select>
       )}
     </Field>
+  );
+}
+
+/** Background pattern: a grid of live previews painted with the site palette. */
+export function PatternField({
+  label,
+  value,
+  onChange,
+  hint,
+}: {
+  label: string;
+  value: PatternId;
+  onChange: (value: PatternId) => void;
+  hint?: string;
+}) {
+  return (
+    <fieldset className="flex flex-col gap-2">
+      <legend className="mb-1.5 text-sm font-medium text-ink-2">{label}</legend>
+      <div role="radiogroup" aria-label={label} className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+        {PATTERNS.map((p) => {
+          const selected = p === value;
+          return (
+            <button
+              key={p}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => onChange(p)}
+              className={cn(
+                "relative flex h-16 items-end overflow-hidden rounded-md border bg-surface p-1.5 text-left transition-[border-color,transform] duration-200 ease-neon",
+                "hover:-translate-y-px active:scale-[.97]",
+                selected ? "border-accent shadow-[0_0_0_1px_var(--accent)]" : "border-line-2",
+              )}
+            >
+              <Pattern pattern={p} />
+              <span className="relative rounded-sm bg-bg/80 px-1.5 py-0.5 text-[12px] leading-tight text-ink-2">
+                {ru.builder.patterns[p]}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      {hint && <p className="text-sm text-muted">{hint}</p>}
+    </fieldset>
   );
 }
 

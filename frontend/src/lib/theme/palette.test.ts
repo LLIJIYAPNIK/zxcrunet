@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { contrast, hexToRgb, isHex, normalizeHex, rgbToHsl } from "./color";
+import {
+  contrast,
+  hexToRgb,
+  hsvToRgb,
+  isHex,
+  normalizeHex,
+  rgbToHex,
+  rgbToHsl,
+  rgbToHsv,
+} from "./color";
 import {
   MIN_ACCENT_CONTRAST,
   PRESETS,
@@ -11,6 +20,20 @@ import {
 } from "./palette";
 
 describe("color helpers", () => {
+  it.each(["#5ab9fc", "#ff4f8b", "#000000", "#ffffff", "#808080", "#39ff14"])(
+    "HSV round-trips %s",
+    (hex) => {
+      expect(rgbToHex(hsvToRgb(rgbToHsv(hexToRgb(hex))))).toBe(hex);
+    },
+  );
+
+  it("puts pure hues where the wheel shows them", () => {
+    expect(rgbToHex(hsvToRgb({ h: 0, s: 1, v: 1 }))).toBe("#ff0000");
+    expect(rgbToHex(hsvToRgb({ h: 120, s: 1, v: 1 }))).toBe("#00ff00");
+    expect(rgbToHex(hsvToRgb({ h: 240, s: 1, v: 1 }))).toBe("#0000ff");
+    expect(rgbToHsv([255, 255, 255])).toEqual({ h: 0, s: 0, v: 1 });
+  });
+
   it("normalises short and uppercase hex", () => {
     expect(normalizeHex("#ABC")).toBe("#aabbcc");
     expect(normalizeHex("5AB9FC")).toBe("#5ab9fc");

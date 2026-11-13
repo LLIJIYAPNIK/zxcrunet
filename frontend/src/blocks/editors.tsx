@@ -12,6 +12,7 @@ import {
   ListField,
   MediaField,
   NumberField,
+  PatternField,
   SelectField,
   TextField,
   TitlePicker,
@@ -77,6 +78,11 @@ function HeroEditor({ value: v, onChange }: EditorProps<"hero">) {
         onChange={(card_role) => set({ card_role })}
       />
       <ChipsField label={f.chips} value={v.chips} max={6} onChange={(chips) => set({ chips })} />
+      <PatternField
+        label={f.cardPattern}
+        value={v.pattern}
+        onChange={(pattern) => set({ pattern })}
+      />
     </Stack>
   );
 }
@@ -362,6 +368,12 @@ function ProfileEditor({ value: v, onChange }: EditorProps<"profile">) {
         purpose="image"
         value={v.cover}
         onChange={(cover) => set({ cover })}
+      />
+      <PatternField
+        label={f.coverPattern}
+        hint={f.coverPatternHint}
+        value={v.pattern}
+        onChange={(pattern) => set({ pattern })}
       />
       <MediaField
         label={f.avatar}

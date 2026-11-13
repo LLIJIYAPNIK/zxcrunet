@@ -38,6 +38,11 @@ MAX_BLOCKS_PER_PAGE = 40
 TitleKind = Literal["game", "book", "anime", "series", "film"]
 ALL_KINDS: tuple[TitleKind, ...] = ("game", "book", "anime", "series", "film")
 
+# Background decoration of the profile card (hero) and the personal cover (profile).
+Pattern = Literal[
+    "rings", "glow", "dots", "grid", "diagonal", "plus", "waves", "circuit", "topo", "none"
+]
+
 
 class InvalidBlockError(InvalidInputError):
     code = "invalid_block"
@@ -56,6 +61,7 @@ class HeroSettings(_Model):
     card_role: Short = ""
     avatar: MediaRef | None = None
     chips: list[Short] = Field(default_factory=list, max_length=6)
+    pattern: Pattern = "rings"
 
 
 class Fact(_Model):
@@ -139,6 +145,7 @@ class ProfileSettings(_Model):
     title: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=160)]
     lead: Text = ""
     mood: Short = ""
+    pattern: Pattern = "glow"
 
 
 class NowSettings(_Model):

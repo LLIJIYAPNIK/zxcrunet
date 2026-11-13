@@ -6,6 +6,7 @@
 import { z } from "zod";
 
 import type { IconName } from "@/components/ui/Icon";
+import { PATTERNS } from "@/lib/theme/patterns";
 
 const SAFE_URL = /^(https?:\/\/|mailto:|tel:|tg:\/\/|#)[^\s<>"']*$/i;
 
@@ -41,6 +42,7 @@ export const heroSchema = z.object({
   card_role: short.default(""),
   avatar: mediaRefSchema.nullable().default(null),
   chips: z.array(short).max(6).default([]),
+  pattern: z.enum(PATTERNS).default("rings"),
 });
 
 export const factsSchema = z.object({
@@ -133,6 +135,7 @@ export const profileSchema = z.object({
   title: line.min(1, "Введите заголовок"),
   lead: text.default(""),
   mood: short.default(""),
+  pattern: z.enum(PATTERNS).default("glow"),
 });
 
 export const nowSchema = z.object({

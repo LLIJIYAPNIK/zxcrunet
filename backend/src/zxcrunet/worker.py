@@ -16,7 +16,9 @@ from zxcrunet.identity.infrastructure.mailer import SmtpEmailSender
 from zxcrunet.shared.config import Settings
 
 settings = Settings()
-broker = ListQueueBroker(settings.redis_url, queue_name="zxcrunet")
+# No read timeout: the worker waits on BRPOP for as long as the queue is empty
+# (redis-py 8 defaults to 5 seconds and the worker processes would crash on an idle queue).
+broker = ListQueueBroker(settings.redis_url, queue_name="zxcrunet", socket_timeout=None)
 scheduler = TaskiqScheduler(broker, sources=[LabelScheduleSource(broker)])
 
 _container: AsyncContainer | None = None

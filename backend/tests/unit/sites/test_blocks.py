@@ -182,3 +182,38 @@ def test_personal_blocks_are_not_for_business_sites() -> None:
 def test_personal_blocks_reject_bad_settings(type_: str, settings: dict[str, Any]) -> None:
     with pytest.raises(InvalidBlockError):
         validate_blocks([block(type_, settings)], "personal")
+
+
+def test_facts_take_up_to_ten_items() -> None:
+    fact = {"value": "1", "label": "x"}
+    (stored,) = validate_blocks([block("facts", {"items": [fact] * 10})], "business")
+
+    assert len(stored["settings"]["items"]) == 10
+    with pytest.raises(InvalidBlockError):
+        validate_blocks([block("facts", {"items": [fact] * 11})])
+
+
+def test_stack_skills_with_grade_and_level() -> None:
+    skills = [
+        {"name": " Python ", "grade": "senior", "level": 90, "note": "8 лет"},
+        {"name": "Go"},
+    ]
+    (stored,) = validate_blocks([block("stack", {"items": skills})], "business")
+
+    python, go = stored["settings"]["items"]
+    assert python == {"name": "Python", "grade": "senior", "level": 90, "note": "8 лет"}
+    assert go == {"name": "Go", "grade": "", "level": 0, "note": ""}
+
+
+@pytest.mark.parametrize(
+    "skill",
+    [{"name": "Python", "grade": "god"}, {"name": "Python", "level": 101}, {"name": " "}],
+)
+def test_stack_rejects_bad_skills(skill: dict[str, Any]) -> None:
+    with pytest.raises(InvalidBlockError):
+        validate_blocks([block("stack", {"items": [skill]})])
+
+
+def test_stack_is_business_only() -> None:
+    with pytest.raises(InvalidBlockError, match="not available"):
+        validate_blocks([block("stack", {"items": [{"name": "Python"}]})], "personal")

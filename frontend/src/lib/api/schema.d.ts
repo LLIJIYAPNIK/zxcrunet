@@ -494,7 +494,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "hero" | "facts" | "experience" | "projects" | "interests" | "contacts" | "resume" | "profile" | "now" | "shelf" | "characters" | "top" | "challenge" | "quotes" | "playlist" | "posts";
+            type: "hero" | "facts" | "experience" | "projects" | "interests" | "stack" | "contacts" | "resume" | "profile" | "now" | "shelf" | "characters" | "top" | "challenge" | "quotes" | "playlist" | "posts";
             /**
              * Version
              * @default 1

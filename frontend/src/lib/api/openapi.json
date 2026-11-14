@@ -1,6 +1,20 @@
 {
   "components": {
     "schemas": {
+      "AddDomainIn": {
+        "properties": {
+          "host": {
+            "maxLength": 300,
+            "title": "Host",
+            "type": "string"
+          }
+        },
+        "required": [
+          "host"
+        ],
+        "title": "AddDomainIn",
+        "type": "object"
+      },
       "BlockIn": {
         "additionalProperties": false,
         "description": "Envelope the editor sends; `settings` is checked against the type's schema.",
@@ -396,6 +410,117 @@
           }
         },
         "title": "Details",
+        "type": "object"
+      },
+      "DomainOut": {
+        "properties": {
+          "activated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activated At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "host": {
+            "title": "Host",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "last_checked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Checked At"
+          },
+          "next_check_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Check At"
+          },
+          "problems": {
+            "items": {
+              "$ref": "#/components/schemas/ProblemOut"
+            },
+            "title": "Problems",
+            "type": "array"
+          },
+          "records": {
+            "items": {
+              "$ref": "#/components/schemas/RecordOut"
+            },
+            "title": "Records",
+            "type": "array"
+          },
+          "site_id": {
+            "format": "uuid",
+            "title": "Site Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "verified",
+              "active",
+              "failed",
+              "lost"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "verified_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verified At"
+          }
+        },
+        "required": [
+          "id",
+          "site_id",
+          "host",
+          "status",
+          "records",
+          "problems",
+          "created_at",
+          "last_checked_at",
+          "next_check_at",
+          "verified_at",
+          "activated_at"
+        ],
+        "title": "DomainOut",
         "type": "object"
       },
       "EmailIn": {
@@ -1012,6 +1137,25 @@
         "title": "PostOut",
         "type": "object"
       },
+      "ProblemOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "details": {
+            "additionalProperties": true,
+            "title": "Details",
+            "type": "object"
+          }
+        },
+        "required": [
+          "code",
+          "details"
+        ],
+        "title": "ProblemOut",
+        "type": "object"
+      },
       "PublicCatalogOut": {
         "description": "Same shapes as the cabinet, without limits.",
         "properties": {
@@ -1149,6 +1293,36 @@
         "title": "ReadinessResponse",
         "type": "object"
       },
+      "RecordOut": {
+        "description": "A DNS record the owner has to create at their registrar.",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "TXT",
+              "A",
+              "AAAA",
+              "CNAME"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "value"
+        ],
+        "title": "RecordOut",
+        "type": "object"
+      },
       "Related": {
         "additionalProperties": false,
         "properties": {
@@ -1240,6 +1414,30 @@
         "title": "ResolvedSiteOut",
         "type": "object"
       },
+      "ServerOut": {
+        "properties": {
+          "ipv4": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Ipv4",
+            "type": "array"
+          },
+          "ipv6": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Ipv6",
+            "type": "array"
+          }
+        },
+        "required": [
+          "ipv4",
+          "ipv6"
+        ],
+        "title": "ServerOut",
+        "type": "object"
+      },
       "SetBlocksIn": {
         "properties": {
           "blocks": {
@@ -1255,6 +1453,36 @@
           "blocks"
         ],
         "title": "SetBlocksIn",
+        "type": "object"
+      },
+      "SiteDomainsOut": {
+        "properties": {
+          "domains": {
+            "items": {
+              "$ref": "#/components/schemas/DomainOut"
+            },
+            "title": "Domains",
+            "type": "array"
+          },
+          "max_domains": {
+            "title": "Max Domains",
+            "type": "integer"
+          },
+          "server": {
+            "$ref": "#/components/schemas/ServerOut"
+          },
+          "used": {
+            "title": "Used",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "domains",
+          "used",
+          "max_domains",
+          "server"
+        ],
+        "title": "SiteDomainsOut",
         "type": "object"
       },
       "SiteOut": {
@@ -2580,6 +2808,85 @@
         ]
       }
     },
+    "/api/domains/{domain_id}": {
+      "delete": {
+        "operationId": "remove_domain_api_domains__domain_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "domain_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Domain Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Domain",
+        "tags": [
+          "domains"
+        ]
+      }
+    },
+    "/api/domains/{domain_id}/check": {
+      "post": {
+        "operationId": "check_domain_api_domains__domain_id__check_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "domain_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Domain Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Check Domain",
+        "tags": [
+          "domains"
+        ]
+      }
+    },
     "/api/health": {
       "get": {
         "description": "Liveness: the process is up and serving requests.",
@@ -2991,6 +3298,100 @@
         "summary": "Update Site",
         "tags": [
           "sites"
+        ]
+      }
+    },
+    "/api/sites/{site_id}/domains": {
+      "get": {
+        "operationId": "list_domains_api_sites__site_id__domains_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "site_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Site Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteDomainsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Domains",
+        "tags": [
+          "domains"
+        ]
+      },
+      "post": {
+        "operationId": "add_domain_api_sites__site_id__domains_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "site_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Site Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddDomainIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Domain",
+        "tags": [
+          "domains"
         ]
       }
     },

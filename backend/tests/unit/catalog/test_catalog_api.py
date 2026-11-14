@@ -7,6 +7,7 @@ from httpx import ASGITransport, AsyncClient
 
 from tests.fakes import Fakes, FakesProvider
 from zxcrunet.catalog.di import CatalogProvider
+from zxcrunet.domains.di import DomainsProvider
 from zxcrunet.identity.di import IdentityProvider
 from zxcrunet.main import create_app
 from zxcrunet.media.di import MediaProvider
@@ -34,6 +35,7 @@ async def client(fakes: Fakes) -> AsyncIterator[AsyncClient]:
         IdentityProvider(),
         MediaProvider(),
         SitesProvider(),
+        DomainsProvider(),
         CatalogProvider(),
         FakesProvider(fakes),
         context={Settings: settings},

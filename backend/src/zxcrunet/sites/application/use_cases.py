@@ -24,6 +24,12 @@ class Actor:
     plan_code: str
 
 
+class CustomHosts(Protocol):
+    """Port to the domains context: which site a verified custom domain serves."""
+
+    async def site_at(self, host: str) -> UUID | None: ...
+
+
 class SiteCache(Protocol):
     """Cache of public host → resolved site payload (None is cached as «no site»)."""
 
@@ -162,6 +168,20 @@ class GetMySite(_Base):
         return await self._own(actor, site_id)
 
 
+class FindOwnedSite:
+    """For other contexts: the user's site, or «site not found» (somebody else's looks missing)."""
+
+    def __init__(self, sites: SiteRepository) -> None:
+        self.sites = sites
+
+    async def __call__(self, user_id: UUID, site_id: UUID) -> Site:
+        site = await self.sites.get(site_id)
+        if site is None:
+            raise SiteNotFoundError("Site not found")
+        site.ensure_owned_by(user_id)
+        return site
+
+
 @dataclass(frozen=True, slots=True)
 class SiteChanges:
     title: str | None = None
@@ -280,7 +300,24 @@ class SetPageBlocks(_Base):
 
 
 class ResolveSite(_Base):
-    """Public: which published site lives at this host. Read-only and cached."""
+    """Public: which published site lives at this host (free address or custom domain).
+
+    Read-only and cached.
+    """
+
+    def __init__(
+        self,
+        sites: SiteRepository,
+        reserved: ReservedSlugs,
+        plans: PlanService,
+        uow: UnitOfWork,
+        clock: Clock,
+        cache: SiteCache,
+        config: SitesConfig,
+        custom_hosts: CustomHosts,
+    ) -> None:
+        super().__init__(sites, reserved, plans, uow, clock, cache, config)
+        self.custom_hosts = custom_hosts
 
     async def __call__(self, host: str) -> ResolvedSite | None:
         key = host.strip().lower().rstrip(".").split(":")[0]
@@ -292,14 +329,7 @@ class ResolveSite(_Base):
         return resolved
 
     async def _resolve(self, host: str) -> ResolvedSite | None:
-        label = self.config.slug_from_host(host)
-        if label is None:
-            return None  # custom domains arrive in stage 6
-        try:
-            slug = Slug.parse(label)
-        except AppError:
-            return None
-        site = await self.sites.get_by_slug(slug)
+        site = await self._find(host)
         if site is None:
             return None
         if site.status == SiteStatus.SUSPENDED:
@@ -309,3 +339,14 @@ class ResolveSite(_Base):
                 "published", str(site.id), str(site.slug), site.published, str(site.owner_id)
             )
         return None
+
+    async def _find(self, host: str) -> Site | None:
+        label = self.config.slug_from_host(host)
+        if label is None:
+            site_id = await self.custom_hosts.site_at(host)
+            return await self.sites.get(site_id) if site_id else None
+        try:
+            slug = Slug.parse(label)
+        except AppError:
+            return None
+        return await self.sites.get_by_slug(slug)

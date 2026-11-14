@@ -8,6 +8,7 @@ import { ProfileCard } from "@/components/public/ProfileCard";
 import { ButtonLink } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { Icon, type IconName } from "@/components/ui/Icon";
+import { ru } from "@/i18n/ru";
 import { cn } from "@/lib/cn";
 
 import { PERSONAL_RENDERERS } from "./personal";
@@ -69,46 +70,96 @@ function Hero({ id, settings: s, ctx }: Props<"hero">) {
   );
 }
 
+/** Desktop columns per fact count: rows stay balanced (6 → 3 + 3, 9 → 3 × 3). */
+const FACT_COLUMNS: Record<number, number> = {
+  1: 1,
+  2: 2,
+  3: 3,
+  4: 4,
+  5: 5,
+  6: 3,
+  7: 4,
+  8: 4,
+  9: 3,
+  10: 5,
+};
+const GRID_COLS: Record<number, string> = {
+  1: "@4xl:grid-cols-1",
+  2: "@4xl:grid-cols-2",
+  3: "@4xl:grid-cols-3",
+  4: "@4xl:grid-cols-4",
+  5: "@4xl:grid-cols-5",
+};
+
 function Facts({ id, settings: s }: Props<"facts">) {
+  const n = s.items.length;
+  const cols = FACT_COLUMNS[n] ?? 4;
   return (
     <section id={id} aria-label="Факты" className={CWRAP}>
-      <div className="grid grid-cols-2 border-y border-line @4xl:grid-cols-4">
-        {s.items.map((item, i) => (
-          <div
-            key={i}
-            className={cn(
-              "flex flex-col gap-3 py-6 pr-4 @4xl:py-8 @4xl:pr-6",
-              i % 2 === 1 && "border-l border-line pl-4",
-              i >= 2 && "border-t border-line @4xl:border-t-0",
-              i > 0 && "@4xl:border-l @4xl:pl-6",
-            )}
-          >
-            <span className="font-display text-cstat font-medium">{item.value}</span>
-            <span className="max-w-[16em] text-ink-2">{item.label}</span>
-          </div>
-        ))}
+      {/* Cells draw their top and left lines; the outer ones hide under the wrapper. */}
+      <div className="overflow-hidden border-y border-line">
+        <div className={cn("-mt-px grid", n > 1 ? "grid-cols-2" : "grid-cols-1", GRID_COLS[cols])}>
+          {s.items.map((item, i) => (
+            <div
+              key={i}
+              className={cn(
+                "flex flex-col gap-3 border-t border-line py-6 pr-4 @4xl:py-8 @4xl:pr-6",
+                i % 2 ? "border-l pl-4" : "pl-0",
+                i % cols ? "@4xl:border-l @4xl:pl-6" : "@4xl:border-l-0 @4xl:pl-0",
+                n % 2 === 1 && i === n - 1 && "@max-4xl:col-span-2",
+              )}
+            >
+              <span className="font-display text-cstat font-medium">{item.value}</span>
+              <span className="max-w-[16em] text-ink-2">{item.label}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );
 }
 
 function Experience({ id, settings: s }: Props<"experience">) {
+  const last = s.items.length - 1;
   return (
     <section id={id} className={cn(CWRAP, "scroll-mt-20 pt-20 pb-14 @3xl:pt-24 @3xl:pb-18")}>
       <SectionHead label={s.label} title={s.title} />
-      <ol className="border-t border-line">
+      <ol>
         {s.items.map((item, i) => (
           <li
             key={i}
-            className="grid gap-2 border-b border-line py-6 @3xl:grid-cols-[48px_minmax(0,4fr)_minmax(0,7fr)] @3xl:items-baseline @3xl:gap-6"
+            className="relative grid grid-cols-[40px_minmax(0,1fr)] gap-x-5 pb-10 last:pb-0 @3xl:gap-x-8"
           >
+            {i < last && (
+              <span
+                aria-hidden
+                className={cn(
+                  "absolute top-12 bottom-2 left-5 w-px -translate-x-1/2",
+                  item.current ? "bg-linear-to-b from-accent to-line-2" : "bg-line-2",
+                )}
+              />
+            )}
             <span
-              className={cn("font-mono text-[13px]", item.current ? "text-accent" : "text-muted")}
+              className={cn(
+                "grid size-10 place-items-center rounded-full border font-mono text-[13px]",
+                item.current
+                  ? "border-accent bg-accent text-accent-ink shadow-[0_0_0_5px_color-mix(in_srgb,var(--accent)_16%,transparent),0_0_28px_var(--glow)]"
+                  : "border-line-2 bg-surface text-ink-2",
+              )}
             >
-              {String(i + 1).padStart(2, "0")}
+              {i + 1}
             </span>
-            <b className="font-display text-xl leading-snug font-medium">{item.title}</b>
-            {item.text && <p className="whitespace-pre-line text-ink-2">{item.text}</p>}
+            <div className="grid gap-2 pt-1.5 @3xl:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] @3xl:gap-6">
+              <div className="flex flex-col items-start gap-1.5">
+                <b className="font-display text-xl leading-snug font-medium">{item.title}</b>
+                {item.current && (
+                  <span className="label text-accent">{ru.builder.fields.current}</span>
+                )}
+              </div>
+              {item.text && (
+                <p className="whitespace-pre-line text-ink-2 @3xl:pt-0.5">{item.text}</p>
+              )}
+            </div>
           </li>
         ))}
       </ol>
@@ -193,6 +244,51 @@ function Interests({ id, settings: s }: Props<"interests">) {
   );
 }
 
+function StackBlock({ id, settings: s }: Props<"stack">) {
+  return (
+    <section id={id} className={cn(CWRAP, "scroll-mt-20 pt-6 pb-14 @3xl:pb-18")}>
+      <SectionHead label={s.label} title={s.title} />
+      <ul className="grid grid-cols-[minmax(0,1fr)] border-t border-line @3xl:grid-cols-2 @3xl:gap-x-12">
+        {s.items.map((skill, i) => (
+          <li key={`${skill.name}-${i}`} className="flex flex-col gap-3 border-b border-line py-5">
+            <div className="flex items-start justify-between gap-4">
+              <span className="flex min-w-0 flex-col gap-0.5">
+                <b className="text-lg font-medium">{skill.name}</b>
+                {skill.note && <span className="text-sm text-muted">{skill.note}</span>}
+              </span>
+              {skill.grade && (
+                <span className="shrink-0 rounded-full border border-[color-mix(in_srgb,var(--accent)_45%,transparent)] px-2.5 py-1 font-mono text-[12px] tracking-wide text-accent uppercase">
+                  {ru.builder.grades[skill.grade]}
+                </span>
+              )}
+            </div>
+            {skill.level > 0 && (
+              <div className="flex items-center gap-3">
+                <span
+                  role="meter"
+                  aria-label={skill.name}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={skill.level}
+                  className="h-1.5 flex-1 overflow-hidden rounded-full bg-raised"
+                >
+                  <span
+                    style={{ width: `${skill.level}%` }}
+                    className="block h-full rounded-full bg-accent shadow-[0_0_12px_var(--glow)]"
+                  />
+                </span>
+                <span className="w-10 text-right font-mono text-[13px] text-muted">
+                  {skill.level}%
+                </span>
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 const CONTACT_ICON: Record<ContactKind, IconName> = {
   telegram: "send",
   github: "github",
@@ -259,6 +355,7 @@ const RENDERERS: { [T in AnyBlock["type"]]: (props: Props<T>) => ReactNode } = {
   experience: Experience,
   projects: Projects,
   interests: Interests,
+  stack: StackBlock,
   contacts: Contacts,
   resume: Resume,
   ...PERSONAL_RENDERERS,

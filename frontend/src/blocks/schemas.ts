@@ -49,7 +49,7 @@ export const factsSchema = z.object({
   items: z
     .array(z.object({ value: z.string().trim().min(1, "Нужно значение").max(16), label: line }))
     .min(1)
-    .max(4),
+    .max(10),
 });
 
 export const experienceSchema = z.object({
@@ -88,6 +88,26 @@ export const projectsSchema = z.object({
 export const interestsSchema = z.object({
   label: short.default(""),
   items: z.array(short).min(1, "Добавьте хотя бы один тег").max(24),
+});
+
+export const GRADES = ["", "intern", "junior", "middle", "senior", "lead", "expert"] as const;
+export type Grade = (typeof GRADES)[number];
+
+export const stackSchema = z.object({
+  label: short.default(""),
+  title: line.default(""),
+  items: z
+    .array(
+      z.object({
+        name: z.string().trim().min(1, "Введите навык").max(40),
+        grade: z.enum(GRADES).default(""),
+        /** Self-assessment for the progress bar; 0 hides the bar. */
+        level: z.number().int().min(0).max(100).default(0),
+        note: short.default(""),
+      }),
+    )
+    .min(1, "Добавьте хотя бы один навык")
+    .max(24),
 });
 
 export const CONTACT_KINDS = [
@@ -225,6 +245,7 @@ export const SCHEMAS = {
   experience: experienceSchema,
   projects: projectsSchema,
   interests: interestsSchema,
+  stack: stackSchema,
   contacts: contactsSchema,
   resume: resumeSchema,
   profile: profileSchema,
@@ -288,7 +309,7 @@ export const META: { [T in BlockType]: BlockMeta & { type: T } } = {
   facts: {
     type: "facts",
     title: "Цифры",
-    description: "До четырёх фактов крупными числами.",
+    description: "От одного до десяти фактов крупными числами.",
     icon: "grid",
     kinds: ["business"],
     summary: (s: SettingsOf<"facts">) => plural(s.items.length, "факт", "факта", "фактов"),
@@ -314,11 +335,20 @@ export const META: { [T in BlockType]: BlockMeta & { type: T } } = {
   },
   interests: {
     type: "interests",
-    title: "Интересы и стек",
-    description: "Строка тегов: технологии, темы, увлечения.",
+    title: "Интересы",
+    description: "Строка тегов: темы и увлечения.",
     icon: "shelf",
     kinds: ["business", "personal"],
     summary: (s: SettingsOf<"interests">) => plural(s.items.length, "тег", "тега", "тегов"),
+  },
+  stack: {
+    type: "stack",
+    title: "Стек",
+    description: "Технологии с грейдом и шкалой владения.",
+    icon: "layers",
+    kinds: ["business"],
+    summary: (s: SettingsOf<"stack">) => plural(s.items.length, "навык", "навыка", "навыков"),
+    navLabel: (s: SettingsOf<"stack">) => s.label || "Стек",
   },
   contacts: {
     type: "contacts",
@@ -465,6 +495,11 @@ export function defaultSettings<T extends BlockType>(type: T, siteTitle: string)
       items: [{ label: "", title: "Проект", text: "", tags: [], link: null }],
     },
     interests: { label: "Интересы", items: ["Дизайн"] },
+    stack: {
+      label: "Стек",
+      title: "С чем работаю",
+      items: [{ name: "Python", grade: "middle", level: 60, note: "" }],
+    },
     contacts: {
       title: "Есть задача?",
       title_muted: "Напишите.",

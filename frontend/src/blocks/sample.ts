@@ -97,6 +97,24 @@ export const SAMPLE_BUSINESS_BLOCKS: AnyBlock[] = [
     },
   },
   {
+    id: id(7),
+    type: "stack",
+    version: 1,
+    hidden: false,
+    settings: {
+      label: "Стек",
+      title: "С чем работаю каждый день",
+      items: [
+        { name: "Figma", grade: "senior", level: 95, note: "7 лет, автолейауты и варианты" },
+        { name: "UX-исследования", grade: "senior", level: 85, note: "интервью, юзабилити-тесты" },
+        { name: "Дизайн-системы", grade: "lead", level: 90, note: "токены, Storybook" },
+        { name: "Прототипирование", grade: "middle", level: 70, note: "ProtoPie, Framer" },
+        { name: "HTML и CSS", grade: "junior", level: 40, note: "" },
+        { name: "Аналитика", grade: "", level: 55, note: "Amplitude, A/B" },
+      ],
+    },
+  },
+  {
     id: id(5),
     type: "interests",
     version: 1,

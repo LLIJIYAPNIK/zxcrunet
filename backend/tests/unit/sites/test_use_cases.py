@@ -41,6 +41,17 @@ def fakes() -> Fakes:
 
 
 def build[UC: _Base](cls: type[UC], f: Fakes) -> UC:
+    if issubclass(cls, ResolveSite):
+        return cls(
+            sites=f.sites,
+            reserved=f.reserved,
+            plans=PlanService(f.plans),
+            uow=f.uow,
+            clock=f.clock,
+            cache=f.site_cache,
+            config=CONFIG,
+            custom_hosts=f.custom_hosts,
+        )
     return cls(
         sites=f.sites,
         reserved=f.reserved,

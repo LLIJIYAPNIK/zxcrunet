@@ -6,6 +6,7 @@ from dishka.integrations.fastapi import FastapiProvider
 from httpx import ASGITransport, AsyncClient
 
 from tests.fakes import Fakes, FakesProvider
+from zxcrunet.domains.di import DomainsProvider
 from zxcrunet.identity.di import IdentityProvider
 from zxcrunet.main import create_app
 from zxcrunet.media.di import MediaProvider
@@ -33,6 +34,7 @@ async def client(fakes: Fakes) -> AsyncIterator[AsyncClient]:
         IdentityProvider(),
         MediaProvider(),
         SitesProvider(),
+        DomainsProvider(),
         FakesProvider(fakes),
         context={Settings: settings},
     )

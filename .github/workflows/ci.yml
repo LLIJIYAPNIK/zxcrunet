@@ -79,6 +79,17 @@ jobs:
       - run: pnpm test
       - run: pnpm build
 
+  caddy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build Caddy with the Cloudflare DNS plugin
+        run: docker build -t zxc-caddy infra/caddy
+      - name: Production and development configs are valid
+        run: |
+          docker run --rm -e ACME_EMAIL=ops@example.com -e CLOUDFLARE_API_TOKEN=dummy             zxc-caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+          docker run --rm -v "$PWD/infra/caddy/Caddyfile.dev:/etc/caddy/Caddyfile:ro"             zxc-caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+
   e2e:
     runs-on: ubuntu-latest
     services:

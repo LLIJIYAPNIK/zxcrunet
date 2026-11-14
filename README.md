@@ -22,8 +22,9 @@ cp .env.example .env
 uv sync
 uv run alembic upgrade head
 uv run uvicorn --factory zxcrunet.main:create_app --reload
-# в отдельном терминале: фоновые задачи (отправка писем)
+# в отдельных терминалах: фоновые задачи (письма, проверка доменов) и расписание
 uv run taskiq worker zxcrunet.worker:broker
+uv run taskiq scheduler zxcrunet.worker:scheduler
 # владелец продукта (роль owner): создать или повысить существующего пользователя
 uv run python -m zxcrunet.cli create-owner you@example.com
 
@@ -48,6 +49,22 @@ pnpm seed:demo --email you@example.com --password '…'
 ### Без Docker (Windows)
 
 Postgres можно взять системный (поменяйте порт в `ZXC_DATABASE_URL`). Redis для Windows: сборка [redis-windows](https://github.com/redis-windows/redis-windows) версии 7.x. Сборка 5.x не подходит: в ней нет `GETDEL`. Положите её в `infra/.local/` (папка в `.gitignore`) и запустите `redis-server.exe --port 6379`. Mailpit необязателен: без него письма не уходят, а владелец из `create-owner` уже с подтверждённой почтой.
+
+### Свои домены
+
+Пользователь подключает домен в настройках визитки и добавляет у регистратора две записи: TXT `_zxc-verify.<домен>` с токеном и A `<домен>` на IP сервера (для `www` вместо A нужна CNAME на основной домен). Воркер проверяет записи сразу, потом с backoff в течение 48 часов, подтверждённые и активные домены — раз в сутки. Расписание ведёт `taskiq scheduler`: без него проверки идут только по кнопке «Проверить сейчас».
+
+Настройки бэкенда:
+
+- `ZXC_DOMAINS_SERVER_IPV4` и `ZXC_DOMAINS_SERVER_IPV6` — публичные IP сервера, куда должны указывать записи;
+- `ZXC_DNS_NAMESERVERS` — DNS-серверы для проверки (по умолчанию 1.1.1.1 и 8.8.8.8);
+- `ZXC_TLS_PROBE_VERIFY` — проверять сертификат при HTTPS-пробе (локально `false`).
+
+Caddy выдаёт сертификаты своим доменам по запросу (on-demand TLS) и перед выпуском спрашивает `GET /internal/tls/ask?domain=`. Этот путь отвечает только на прямые запросы из приватной сети, публичный прокси его не пропускает. Конфиги лежат в `infra/caddy`: `Caddyfile` для продакшна (wildcard `*.zxc.ru.net` через Cloudflare DNS-01, нужен образ из `infra/caddy/Dockerfile`) и `Caddyfile.dev` для локальной проверки:
+
+```bash
+docker compose -f infra/docker-compose.dev.yml --profile caddy up -d caddy
+```
 
 ## Проверки
 

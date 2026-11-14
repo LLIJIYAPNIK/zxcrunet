@@ -4,6 +4,15 @@ import type { SVGProps } from "react";
 const PATHS = {
   arrow: <path d="M5 12h14m-7-7l7 7l-7 7" />,
   external: <path d="M7 7h10v10M7 17L17 7" />,
+  copy: (
+    <>
+      <rect width="14" height="14" x="8" y="8" rx="2" />
+      <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+    </>
+  ),
+  refresh: (
+    <path d="M3 12a9 9 0 0 1 9-9a9.75 9.75 0 0 1 6.74 2.74L21 8M21 3v5h-5m5 4a9 9 0 0 1-9 9a9.75 9.75 0 0 1-6.74-2.74L3 16m5 0H3v5" />
+  ),
   plus: <path d="M5 12h14m-7-7v14" />,
   play: <path d="M6 4l14 8l-14 8z" />,
   quote: (

@@ -11,6 +11,8 @@ export type SiteSummary = Schemas["SiteSummaryOut"];
 export type Site = Schemas["SiteOut"];
 export type SitePage = Schemas["PageOut"];
 export type ResolvedSite = Schemas["ResolvedSiteOut"];
+export type CustomDomain = Schemas["DomainOut"];
+export type SiteDomains = Schemas["SiteDomainsOut"];
 
 export type ApiErrorBody = {
   code: string;

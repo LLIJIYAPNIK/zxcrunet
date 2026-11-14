@@ -1,8 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import type { ReactNode } from "react";
 
 import { ru } from "@/i18n/ru";
+
+import { favoriteCharacters, initials } from "@/lib/catalog/catalog";
 
 import { useCatalog } from "./catalog-context";
 
@@ -13,6 +16,7 @@ import {
   MediaField,
   NumberField,
   PatternField,
+  RangeField,
   SelectField,
   TextField,
   TitlePicker,
@@ -20,6 +24,7 @@ import {
 } from "./fields";
 import {
   CONTACT_KINDS,
+  GRADES,
   KIND_TITLES,
   SHELF_STYLES,
   STYLE_TITLES,
@@ -92,7 +97,7 @@ function FactsEditor({ value: v, onChange }: EditorProps<"facts">) {
     <ListField
       label={f.items}
       items={v.items}
-      max={4}
+      max={10}
       make={() => ({ value: "1", label: "" })}
       title={(item) => item.value || "—"}
       onChange={(items) => onChange({ ...v, items })}
@@ -237,6 +242,63 @@ function InterestsEditor({ value: v, onChange }: EditorProps<"interests">) {
         max={24}
         onChange={(items) => onChange({ ...v, items })}
       />
+    </Stack>
+  );
+}
+
+const gradeOptions = GRADES.map((g) => ({ value: g, label: ru.builder.grades[g] }));
+
+function StackEditor({ value: v, onChange }: EditorProps<"stack">) {
+  return (
+    <Stack>
+      <TextField
+        label={f.label}
+        value={v.label}
+        max={80}
+        onChange={(label) => onChange({ ...v, label })}
+      />
+      <TextField label={f.title} value={v.title} onChange={(title) => onChange({ ...v, title })} />
+      <ListField
+        label={f.skills}
+        items={v.items}
+        max={24}
+        make={() => ({ name: "", grade: "" as const, level: 50, note: "" })}
+        title={(item) =>
+          [item.name || "—", item.grade && ru.builder.grades[item.grade]]
+            .filter(Boolean)
+            .join(" · ")
+        }
+        onChange={(items) => onChange({ ...v, items })}
+      >
+        {(item, update) => (
+          <>
+            <TextField
+              label={f.skill}
+              value={item.name}
+              max={40}
+              onChange={(name) => update({ ...item, name })}
+            />
+            <SelectField
+              label={f.grade}
+              value={item.grade}
+              options={gradeOptions}
+              onChange={(grade) => update({ ...item, grade })}
+            />
+            <RangeField
+              label={f.level}
+              hint={f.levelHint}
+              value={item.level}
+              onChange={(level) => update({ ...item, level })}
+            />
+            <TextField
+              label={f.skillNote}
+              value={item.note}
+              max={80}
+              onChange={(note) => update({ ...item, note })}
+            />
+          </>
+        )}
+      </ListField>
     </Stack>
   );
 }
@@ -476,10 +538,52 @@ function ShelfEditor({ value: v, onChange }: EditorProps<"shelf">) {
 }
 
 function CharactersEditor({ value: v, onChange }: EditorProps<"characters">) {
+  const people = favoriteCharacters(useCatalog().catalog);
   return (
     <Stack>
       <Heading value={v} onChange={onChange} />
       <p className="text-sm text-muted">{pf.charactersHint}</p>
+      {people.length ? (
+        <ul className="flex flex-col gap-2">
+          {people.map((p) => (
+            <li
+              key={`${p.title.id}-${p.name}`}
+              className="flex items-center gap-3 rounded-md border border-line bg-bg p-2.5"
+            >
+              <span className="relative grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-raised text-sm font-medium">
+                {p.avatar ? (
+                  <Image
+                    src={p.avatar.url}
+                    alt=""
+                    fill
+                    sizes="40px"
+                    unoptimized
+                    className="object-cover"
+                  />
+                ) : (
+                  initials(p.name)
+                )}
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col">
+                <b className="truncate text-sm font-medium">{p.name}</b>
+                <span className="truncate text-xs text-muted">
+                  {[p.title.name, !p.avatar && pf.characterNoAvatar].filter(Boolean).join(" · ")}
+                </span>
+              </span>
+              <a
+                href={`/app/catalog/${p.title.id}`}
+                target="_blank"
+                rel="noopener"
+                className="shrink-0 text-sm text-accent hover:text-ink"
+              >
+                {pf.characterEdit}
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-ink-2">{pf.charactersEmpty}</p>
+      )}
     </Stack>
   );
 }
@@ -667,6 +771,7 @@ export const EDITORS: { [T in AnyBlock["type"]]: (props: EditorProps<T>) => Reac
   experience: ExperienceEditor,
   projects: ProjectsEditor,
   interests: InterestsEditor,
+  stack: StackEditor,
   contacts: ContactsEditor,
   resume: ResumeEditor,
   profile: ProfileEditor,

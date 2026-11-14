@@ -62,6 +62,41 @@ describe("block registry", () => {
   });
 });
 
+const facts = (n: number): AnyBlock => ({
+  id: "f",
+  type: "facts",
+  version: 1,
+  hidden: false,
+  settings: { items: Array.from({ length: n }, (_, i) => ({ value: String(i), label: "x" })) },
+});
+
+describe("facts layout", () => {
+  it.each([
+    [3, "@4xl:grid-cols-3"],
+    [5, "@4xl:grid-cols-5"],
+    [6, "@4xl:grid-cols-3"],
+    [8, "@4xl:grid-cols-4"],
+    [10, "@4xl:grid-cols-5"],
+  ])("%i facts get balanced rows", (n, cols) => {
+    expect(validateBlock(facts(n))).toBeNull();
+    const { container } = render(<Blocks blocks={[facts(n)]} ctx={ctx} />);
+
+    expect(container.querySelector(".grid")).toHaveClass(cols);
+  });
+
+  it("an odd last fact spans the whole row on phones", () => {
+    const { container } = render(<Blocks blocks={[facts(3)]} ctx={ctx} />);
+    const cells = container.querySelectorAll(".grid > div");
+
+    expect(cells[2]).toHaveClass("@max-4xl:col-span-2");
+    expect(cells[1]).not.toHaveClass("@max-4xl:col-span-2");
+  });
+
+  it("takes at most ten facts", () => {
+    expect(validateBlock(facts(11))).not.toBeNull();
+  });
+});
+
 describe("renders", () => {
   it("renders every block of the sample", () => {
     render(<Blocks blocks={SAMPLE_BUSINESS_BLOCKS} ctx={ctx} />);
@@ -75,6 +110,8 @@ describe("renders", () => {
       "_blank",
     );
     expect(screen.getByText("Доступность")).toBeInTheDocument();
+    expect(screen.getByRole("meter", { name: "Figma" })).toHaveAttribute("aria-valuenow", "95");
+    expect(screen.getAllByText("Senior")).toHaveLength(2);
     expect(screen.getByRole("link", { name: /anna@example.com/ })).toHaveAttribute(
       "href",
       "mailto:anna@example.com",
@@ -83,7 +120,7 @@ describe("renders", () => {
 
   it("skips hidden blocks and a resume without a file", () => {
     const blocks: AnyBlock[] = [
-      { ...SAMPLE_BUSINESS_BLOCKS[4], hidden: true },
+      { ...SAMPLE_BUSINESS_BLOCKS.find((b) => b.type === "interests")!, hidden: true },
       {
         id: "r",
         type: "resume",

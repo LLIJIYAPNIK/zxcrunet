@@ -6,6 +6,7 @@ import { CatalogIndex, EMPTY_CATALOG } from "@/lib/catalog/catalog";
 
 import { Blocks } from "./renderers";
 import { SAMPLE_CATALOG, SAMPLE_GAMES_BLOCKS, SAMPLE_PERSONAL_BLOCKS } from "./sample-personal";
+import { SPINE_MIN_WIDTH, spineSize } from "./personal";
 import { validateBlock } from "./schemas";
 
 const ctx = {
@@ -79,5 +80,19 @@ describe("title page", () => {
     expect(screen.getByText("Firelink Shrine")).toBeInTheDocument();
     expect(screen.getByText(/предшественник · нет на полке/)).toBeInTheDocument();
     expect(screen.getByText("Dark Souls III закрывает круг")).toBeInTheDocument();
+  });
+});
+
+describe("book spines", () => {
+  it("are never too thin for their text, whatever the id", () => {
+    const ids = [
+      ...SAMPLE_CATALOG.titles.map((t) => t.id),
+      "ffffffff-ffff-7fff-bfff-ffffffffffff",
+      "0195f3a0-9999-7999-8999-999999999999",
+    ];
+    for (const id of ids) {
+      const { width } = spineSize({ id } as Parameters<typeof spineSize>[0]);
+      expect(width, id).toBeGreaterThanOrEqual(SPINE_MIN_WIDTH);
+    }
   });
 });

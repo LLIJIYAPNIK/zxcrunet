@@ -270,11 +270,15 @@ function Bento({ items, index }: { items: Title[]; index: CatalogIndex }) {
   );
 }
 
+/** The thinnest spine still fits a 13px vertical line of text with some air around it. */
+export const SPINE_MIN_WIDTH = 40;
+
 /** Deterministic height and width for a spine, from the title id. */
-function spineSize(t: Title): { height: number; width: number } {
+export function spineSize(t: Title): { height: number; width: number } {
   let hash = 0;
   for (const ch of t.id) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
-  return { height: 220 + (hash % 80), width: 40 + ((hash >> 8) % 26) };
+  // `>>>`, not `>>`: a signed shift made big hashes negative and spines too thin to read.
+  return { height: 220 + (hash % 80), width: SPINE_MIN_WIDTH + ((hash >>> 8) % 26) };
 }
 
 function Spines({ items }: { items: Title[] }) {

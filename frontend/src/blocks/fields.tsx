@@ -513,6 +513,44 @@ export function NumberField<N extends number | null>({
   );
 }
 
+/** A 0–100 slider with the current value next to the label. */
+export function RangeField({
+  label,
+  value,
+  onChange,
+  step = 5,
+  hint,
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  step?: number;
+  hint?: string;
+}) {
+  return (
+    <Field label={label} hint={hint}>
+      {({ id, describedBy }) => (
+        <span className="flex items-center gap-4">
+          <input
+            id={id}
+            type="range"
+            min={0}
+            max={100}
+            step={step}
+            value={value}
+            aria-describedby={describedBy}
+            onChange={(e) => onChange(Number(e.target.value))}
+            className="h-12 min-w-0 flex-1 accent-(--accent)"
+          />
+          <output htmlFor={id} className="w-12 text-right font-mono text-sm text-ink-2">
+            {value}%
+          </output>
+        </span>
+      )}
+    </Field>
+  );
+}
+
 /** A title from the owner's catalog (optionally only of one kind). */
 export function TitlePicker({
   label,

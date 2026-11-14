@@ -70,7 +70,7 @@ class Fact(_Model):
 
 
 class FactsSettings(_Model):
-    items: list[Fact] = Field(min_length=1, max_length=4)
+    items: list[Fact] = Field(min_length=1, max_length=10)
 
 
 class ExperienceItem(_Model):
@@ -103,6 +103,25 @@ class ProjectsSettings(_Model):
 class InterestsSettings(_Model):
     label: Short = ""
     items: list[Short] = Field(min_length=1, max_length=24)
+
+
+Grade = Literal["", "intern", "junior", "middle", "senior", "lead", "expert"]
+
+
+class Skill(_Model):
+    name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=40)]
+    #: Professional grade; empty means «not shown».
+    grade: Grade = ""
+    #: Self-assessment for the progress bar, 0 hides the bar.
+    level: int = Field(default=0, ge=0, le=100)
+    #: A short note: «5 лет», «FastAPI, Django».
+    note: Short = ""
+
+
+class StackSettings(_Model):
+    label: Short = ""
+    title: Line = ""
+    items: list[Skill] = Field(min_length=1, max_length=24)
 
 
 ContactKind = Literal["telegram", "github", "email", "phone", "vk", "linkedin", "website"]
@@ -235,6 +254,7 @@ SCHEMAS: dict[str, dict[int, type[_Model]]] = {
     "experience": {1: ExperienceSettings},
     "projects": {1: ProjectsSettings},
     "interests": {1: InterestsSettings},
+    "stack": {1: StackSettings},
     "contacts": {1: ContactsSettings},
     "resume": {1: ResumeSettings},
     "profile": {1: ProfileSettings},
@@ -254,6 +274,7 @@ BlockType = Literal[
     "experience",
     "projects",
     "interests",
+    "stack",
     "contacts",
     "resume",
     "profile",

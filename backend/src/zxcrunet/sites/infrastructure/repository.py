@@ -4,7 +4,7 @@ from typing import Literal
 from uuid import UUID
 
 from redis.asyncio import Redis
-from sqlalchemy import ColumnElement, exists, func, or_, select, true
+from sqlalchemy import ColumnElement, exists, func, or_, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -76,6 +76,20 @@ def _apply(row: SiteModel, site: Site) -> None:
         model.blocks = list(page.blocks)
         wanted.append(model)
     row.pages = wanted
+
+
+_BLOCK_USAGE = text(
+    """
+    SELECT block ->> 'type' AS type, count(*) AS blocks, count(DISTINCT s.id) AS sites
+    FROM sites AS s
+    CROSS JOIN LATERAL jsonb_array_elements(s.published -> 'pages') AS page
+    CROSS JOIN LATERAL jsonb_array_elements(page -> 'blocks') AS block
+    WHERE s.status = :status AND s.published IS NOT NULL
+    GROUP BY 1
+    ORDER BY 2 DESC, 1
+    LIMIT :limit
+    """
+)
 
 
 class SqlSiteRepository:
@@ -164,27 +178,7 @@ class SqlSiteRepository:
 
     async def block_usage(self, limit: int) -> list[tuple[str, int, int]]:
         """(block type, blocks, sites) over the published versions of published sites."""
-        pages = (
-            func.jsonb_array_elements(SiteModel.published["pages"])
-            .table_valued("value")
-            .render_derived("page", with_types=False)
-        )
-        blocks = (
-            func.jsonb_array_elements(pages.c.value["blocks"])
-            .table_valued("value")
-            .render_derived("block", with_types=False)
-        )
-        block_type = blocks.c.value["type"].astext.label("type")
-        rows = await self._session.execute(
-            select(block_type, func.count(), func.count(SiteModel.id.distinct()))
-            .select_from(SiteModel)
-            .join(pages, true())
-            .join(blocks, true())
-            .where(SiteModel.status == SiteStatus.PUBLISHED.value)
-            .group_by(block_type)
-            .order_by(func.count().desc(), block_type)
-            .limit(limit)
-        )
+        rows = await self._session.execute(_BLOCK_USAGE, {"status": "published", "limit": limit})
         return [(str(row[0]), int(row[1]), int(row[2])) for row in rows]
 
     async def _flush(self) -> None:

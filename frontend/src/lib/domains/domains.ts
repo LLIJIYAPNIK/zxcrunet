@@ -70,6 +70,7 @@ export function problemText(problem: Problem, domain: CustomDomain, server: Serv
     case "aaaa_wrong":
     case "domain_taken":
     case "dns_unavailable":
+    case "revoked":
       return fill(texts[problem.code]);
     default:
       return texts.unknown;

@@ -24,6 +24,7 @@ function domain(overrides: Partial<CustomDomain> = {}): CustomDomain {
     next_check_at: "2026-11-14T10:01:00Z",
     verified_at: null,
     activated_at: null,
+    revoked: false,
     ...overrides,
   };
 }

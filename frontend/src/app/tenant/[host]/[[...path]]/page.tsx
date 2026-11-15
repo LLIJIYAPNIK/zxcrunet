@@ -65,6 +65,7 @@ async function TenantContent({ params }: { params: Params }) {
       page={found.page}
       catalog={found.catalog}
       title={found.title}
+      live
     />
   );
 }

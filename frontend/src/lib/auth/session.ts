@@ -3,7 +3,7 @@
  * Reads the session cookie, so call these only inside a <Suspense> boundary (Cache Components).
  */
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import type { Me } from "@/lib/api/client";
 
@@ -45,4 +45,11 @@ export async function requireData<T>(path: string, next: string): Promise<T | nu
     redirect(`/app/login?next=${encodeURIComponent(next)}`);
   }
   return result.data;
+}
+
+/** The admin panel: the owner, or a plain 404 for everybody else (it is not advertised). */
+export async function requireOwner(next = "/admin"): Promise<Me> {
+  const me = await requireMe(next);
+  if (me.user.role !== "owner") notFound();
+  return me;
 }

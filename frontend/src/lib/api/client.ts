@@ -13,6 +13,15 @@ export type SitePage = Schemas["PageOut"];
 export type ResolvedSite = Schemas["ResolvedSiteOut"];
 export type CustomDomain = Schemas["DomainOut"];
 export type SiteDomains = Schemas["SiteDomainsOut"];
+export type AdminUser = Schemas["AdminUserOut"];
+export type AdminSite = Schemas["AdminSiteOut"];
+export type AdminDomain = Schemas["AdminDomainOut"];
+export type AdminPlan = Schemas["PlanOut"];
+export type ReservedName = Schemas["ReservedNameOut"];
+export type AdminReport = Schemas["ReportOut"];
+export type AuditEntry = Schemas["AuditOut"];
+export type DashboardData = Schemas["DashboardOut"];
+export type DayViews = Schemas["DayViewsOut"];
 
 export type ApiErrorBody = {
   code: string;

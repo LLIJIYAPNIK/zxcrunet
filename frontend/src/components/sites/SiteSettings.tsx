@@ -212,6 +212,15 @@ export function SiteSettings({ initial, emailVerified, domains }: SiteSettingsPr
                 <Icon name="external" size={16} />
               </a>
             </>
+          ) : site.status === "suspended" ? (
+            <div className="flex flex-col gap-1">
+              <p className="font-medium text-[#ffb3b3]">{t.publish.suspended}</p>
+              {site.suspension_reason && (
+                <p className="text-ink-2">
+                  {t.publish.suspendedReason.replace("{reason}", site.suspension_reason)}
+                </p>
+              )}
+            </div>
           ) : (
             <p className="text-ink-2">
               {emailVerified ? t.publish.draftNote : t.publish.needVerified}

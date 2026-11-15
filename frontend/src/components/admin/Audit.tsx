@@ -55,7 +55,9 @@ export function AuditList({ targetId, compact = false }: { targetId?: string; co
                 <>
                   <span className="font-mono">{formatDateTime(entry.at)}</span>
                   <span>{entry.actor_email ?? entry.actor_id}</span>
-                  <span className="min-w-0 break-all text-ink-2">{auditSubject(entry)}</span>
+                  <span className="min-w-0 text-ink-2 [overflow-wrap:anywhere]">
+                    {auditSubject(entry)}
+                  </span>
                 </>
               }
             />

@@ -71,7 +71,7 @@ export function DayBars({
       </div>
       <div className="flex justify-between font-mono text-[12px] text-muted">
         <span>{data[0] ? formatDay(data[0].day) : ""}</span>
-        <span>{t.max.replace("{n}", formatCount(max))}</span>
+        <span>{data.some((d) => d.value > 0) ? t.max.replace("{n}", formatCount(max)) : ""}</span>
         <span>{last ? formatDay(last.day) : ""}</span>
       </div>
 

@@ -24,8 +24,10 @@ export function auditSubject(entry: AuditEntry): string {
   const subject = [d.email, d.host, d.slug, entry.target_type === "plan" ? entry.target_id : null]
     .filter((v): v is string => typeof v === "string" && v.length > 0)
     .at(0);
-  const extra = [d.reason, d.note, d.plan]
+  const reasons = t.reports.reason as Record<string, string>;
+  const extra = [d.note, d.reason, d.plan]
     .filter((v): v is string => typeof v === "string" && v.length > 0)
+    .map((v) => reasons[v] ?? v)
     .at(0);
   return [subject ?? entry.target_id, extra].filter(Boolean).join(" · ");
 }

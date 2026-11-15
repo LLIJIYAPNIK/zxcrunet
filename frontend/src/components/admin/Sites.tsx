@@ -229,7 +229,7 @@ export function SiteCard({ siteId }: { siteId: string }) {
                 </Link>,
               ],
               [ru.admin.created, formatDateTime(site.created_at)],
-              [ru.sites.publish.liveAt, formatDateTime(site.published_at)],
+              [t.publishedAt, formatDateTime(site.published_at)],
               [t.pagesLabel, String(site.pages)],
             ]}
           />

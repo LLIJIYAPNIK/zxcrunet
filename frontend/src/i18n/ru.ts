@@ -823,6 +823,7 @@ export const ru = {
       title: "Визитки",
       search: "Адрес или название",
       pagesLabel: "Страниц",
+      publishedAt: "Опубликована",
       suspend: "Снять с публикации",
       suspendTitle: "Снять {host} с публикации?",
       suspendText:

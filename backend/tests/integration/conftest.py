@@ -2,22 +2,14 @@ from collections.abc import AsyncIterator
 
 import pytest
 from dishka import AsyncContainer, Provider, Scope, make_async_container
-from dishka.integrations.fastapi import FastapiProvider
 from httpx import ASGITransport, AsyncClient
 
 from tests.fakes import AllowAllRateLimiter, CapturingMailer, FakeDns, FakeTls, RecordingCheckQueue
-from zxcrunet.catalog.di import CatalogProvider
 from zxcrunet.domains.application.use_cases import CheckQueue, DnsResolver, TlsProbe
-from zxcrunet.domains.di import DomainsProvider
 from zxcrunet.identity.application.ports import Mailer
-from zxcrunet.identity.di import IdentityProvider
-from zxcrunet.main import create_app
-from zxcrunet.media.di import MediaProvider
-from zxcrunet.plans.di import PlansProvider
+from zxcrunet.main import app_providers, create_app
 from zxcrunet.shared.application.rate_limit import RateLimiter
 from zxcrunet.shared.config import Settings
-from zxcrunet.shared.di import InfrastructureProvider
-from zxcrunet.sites.di import SitesProvider
 
 ORIGIN = {"Origin": "http://localhost:3000"}
 
@@ -61,14 +53,7 @@ async def container(
     overrides.provide(lambda: tls, provides=TlsProbe)
     overrides.provide(lambda: checks, provides=CheckQueue)
     app_container = make_async_container(
-        InfrastructureProvider(),
-        FastapiProvider(),
-        PlansProvider(),
-        IdentityProvider(),
-        MediaProvider(),
-        SitesProvider(),
-        DomainsProvider(),
-        CatalogProvider(),
+        *app_providers(),
         overrides,
         context={Settings: SETTINGS},
     )

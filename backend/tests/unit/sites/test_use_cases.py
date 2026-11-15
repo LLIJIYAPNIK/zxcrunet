@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 import pytest
@@ -187,7 +188,7 @@ class TestPublishAndResolve:
     async def test_suspended_site_resolves_as_suspended(self, fakes: Fakes) -> None:
         me = actor()
         site_id = await create(fakes, me)
-        fakes.sites.by_id[site_id].suspend()
+        fakes.sites.by_id[site_id].suspend("spam", datetime(2026, 11, 11, tzinfo=UTC))
 
         resolved = await build(ResolveSite, fakes)("anna.zxc.ru.net")
 

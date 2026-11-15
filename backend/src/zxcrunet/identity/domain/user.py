@@ -4,7 +4,12 @@ from datetime import datetime
 from enum import StrEnum
 from uuid import UUID
 
-from zxcrunet.identity.domain.errors import InvalidEmailError, UserBlockedError, WeakPasswordError
+from zxcrunet.identity.domain.errors import (
+    InvalidEmailError,
+    OwnerProtectedError,
+    UserBlockedError,
+    WeakPasswordError,
+)
 from zxcrunet.plans.domain.plan import FREE_PLAN_CODE
 from zxcrunet.shared.domain.ids import uuid7
 
@@ -76,6 +81,21 @@ class User:
 
     def promote_to_owner(self) -> None:
         self.role = Role.OWNER
+
+    @property
+    def is_blocked(self) -> bool:
+        return self.status == UserStatus.BLOCKED
+
+    def block(self) -> None:
+        if self.is_owner:
+            raise OwnerProtectedError("The owner cannot be blocked")
+        self.status = UserStatus.BLOCKED
+
+    def unblock(self) -> None:
+        self.status = UserStatus.ACTIVE
+
+    def change_plan(self, plan_code: str) -> None:
+        self.plan_code = plan_code
 
     def ensure_active(self) -> None:
         if self.status == UserStatus.BLOCKED:

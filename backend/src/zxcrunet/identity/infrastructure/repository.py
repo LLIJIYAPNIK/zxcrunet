@@ -1,10 +1,12 @@
+from datetime import date, datetime
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import ColumnElement, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from zxcrunet.identity.domain.errors import EmailTakenError
+from zxcrunet.identity.domain.repository import UserFilter
 from zxcrunet.identity.domain.user import Email, Role, User, UserStatus
 from zxcrunet.identity.infrastructure.models import UserModel
 
@@ -61,3 +63,43 @@ class SqlUserRepository:
             raise LookupError(msg)
         _apply(row, user)
         await self._session.flush()
+
+    async def search(self, where: UserFilter, offset: int, limit: int) -> tuple[list[User], int]:
+        conditions: list[ColumnElement[bool]] = []
+        if where.text:
+            conditions.append(UserModel.email.contains(where.text, autoescape=True))
+        if where.status:
+            conditions.append(UserModel.status == where.status.value)
+        if where.role:
+            conditions.append(UserModel.role == where.role.value)
+        if where.plan_code:
+            conditions.append(UserModel.plan_code == where.plan_code)
+        total = await self._session.scalar(
+            select(func.count()).select_from(UserModel).where(*conditions)
+        )
+        rows = await self._session.scalars(
+            select(UserModel)
+            .where(*conditions)
+            .order_by(UserModel.created_at.desc(), UserModel.id.desc())
+            .offset(offset)
+            .limit(limit)
+        )
+        return [_to_domain(r) for r in rows], int(total or 0)
+
+    async def emails(self, ids: set[UUID]) -> dict[UUID, str]:
+        if not ids:
+            return {}
+        rows = await self._session.execute(
+            select(UserModel.id, UserModel.email).where(UserModel.id.in_(ids))
+        )
+        return {row.id: row.email for row in rows}
+
+    async def count(self) -> int:
+        return int(await self._session.scalar(select(func.count()).select_from(UserModel)) or 0)
+
+    async def registrations_by_day(self, since: datetime) -> dict[date, int]:
+        day = func.date(func.timezone("UTC", UserModel.created_at)).label("day")
+        rows = await self._session.execute(
+            select(day, func.count()).where(UserModel.created_at >= since).group_by(day)
+        )
+        return {row[0]: int(row[1]) for row in rows}

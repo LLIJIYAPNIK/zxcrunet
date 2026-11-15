@@ -14,6 +14,7 @@ from uuid import UUID
 
 from zxcrunet.domains.domain.errors import (
     DomainNotFoundError,
+    DomainRevokedError,
     HostNotAllowedError,
     InvalidHostError,
 )
@@ -190,6 +191,8 @@ class CustomDomain:
     next_check_at: datetime | None = None
     verified_at: datetime | None = None
     activated_at: datetime | None = None
+    #: Set when the product owner revokes the domain: no more checks, no manual restart.
+    revoked_at: datetime | None = None
 
     @classmethod
     def create(
@@ -218,8 +221,14 @@ class CustomDomain:
     def awaits_certificate(self) -> bool:
         return self.status == DomainStatus.VERIFIED
 
+    @property
+    def is_revoked(self) -> bool:
+        return self.revoked_at is not None
+
     def restart(self, now: datetime) -> None:
         """A manual check of a `failed` domain opens a new 48-hour window."""
+        if self.is_revoked:
+            raise DomainRevokedError("The domain was revoked by the service")
         if self.status == DomainStatus.FAILED:
             self.status = DomainStatus.PENDING
             self.checks_started_at = now
@@ -273,6 +282,25 @@ class CustomDomain:
         self.failures = 0
         # Ask for the certificate right away.
         self.next_check_at = now
+
+    def confirm(self, now: datetime) -> None:
+        """The product owner vouches for the domain without the DNS proof.
+
+        It becomes `verified` and gets its certificate as usual; the daily re-check
+        still applies, so records pointing elsewhere will eventually make it `lost`.
+        """
+        if self.is_serving:
+            return
+        self.revoked_at = None
+        self.problems = []
+        self._verify(now)
+
+    def revoke(self, now: datetime) -> None:
+        """The product owner takes the domain away: it stops serving the site for good."""
+        self.status = DomainStatus.FAILED
+        self.problems = [Problem("revoked")]
+        self.next_check_at = None
+        self.revoked_at = now
 
     def certificate_issued(self, now: datetime) -> None:
         if self.status == DomainStatus.VERIFIED:

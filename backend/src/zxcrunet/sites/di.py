@@ -2,8 +2,18 @@ from dishka import Provider, Scope, provide, provide_all
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from zxcrunet.domains.application.use_cases import SiteAtHost
+from zxcrunet.domains.application.use_cases import SiteAtHost, SiteHosts
 from zxcrunet.shared.config import Settings
+from zxcrunet.sites.application.admin import (
+    GetSite,
+    ListReservedNames,
+    ListSites,
+    ReleaseName,
+    ReserveName,
+    RestoreSite,
+    SiteDirectory,
+    SuspendSite,
+)
 from zxcrunet.sites.application.use_cases import (
     AddPage,
     CheckSlug,
@@ -50,8 +60,8 @@ class SitesProvider(Provider):
         return SqlReservedSlugs(session)
 
     @provide(scope=Scope.REQUEST)
-    def custom_hosts(self, site_at: SiteAtHost) -> CustomHosts:
-        return DomainsCustomHosts(site_at)
+    def custom_hosts(self, site_at: SiteAtHost, hosts: SiteHosts) -> CustomHosts:
+        return DomainsCustomHosts(site_at, hosts)
 
     use_cases = provide_all(
         ListMySites,
@@ -68,5 +78,13 @@ class SitesProvider(Provider):
         ResolveSite,
         SetPageBlocks,
         FindOwnedSite,
+        ListSites,
+        GetSite,
+        SuspendSite,
+        RestoreSite,
+        ListReservedNames,
+        ReserveName,
+        ReleaseName,
+        SiteDirectory,
         scope=Scope.REQUEST,
     )

@@ -2,6 +2,12 @@ from dishka import Provider, Scope, provide, provide_all
 from sqlalchemy.ext.asyncio import AsyncSession
 from taskiq import AsyncBroker
 
+from zxcrunet.domains.application.admin import (
+    ConfirmDomain,
+    DomainTotals,
+    ListDomains,
+    RevokeDomain,
+)
 from zxcrunet.domains.application.use_cases import (
     AddDomain,
     AllowCertificate,
@@ -16,6 +22,7 @@ from zxcrunet.domains.application.use_cases import (
     RemoveDomain,
     SiteAtHost,
     SiteDirectory,
+    SiteHosts,
     TlsProbe,
 )
 from zxcrunet.domains.domain.domain import ServerAddresses
@@ -77,5 +84,10 @@ class DomainsProvider(Provider):
         DueDomains,
         AllowCertificate,
         SiteAtHost,
+        SiteHosts,
+        ListDomains,
+        ConfirmDomain,
+        RevokeDomain,
+        DomainTotals,
         scope=Scope.REQUEST,
     )

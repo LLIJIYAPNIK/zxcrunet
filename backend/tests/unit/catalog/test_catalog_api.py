@@ -2,19 +2,11 @@ from collections.abc import AsyncIterator
 
 import pytest
 from dishka import make_async_container
-from dishka.integrations.fastapi import FastapiProvider
 from httpx import ASGITransport, AsyncClient
 
 from tests.fakes import Fakes, FakesProvider
-from zxcrunet.catalog.di import CatalogProvider
-from zxcrunet.domains.di import DomainsProvider
-from zxcrunet.identity.di import IdentityProvider
-from zxcrunet.main import create_app
-from zxcrunet.media.di import MediaProvider
-from zxcrunet.plans.di import PlansProvider
+from zxcrunet.main import app_providers, create_app
 from zxcrunet.shared.config import Settings
-from zxcrunet.shared.di import InfrastructureProvider
-from zxcrunet.sites.di import SitesProvider
 
 ORIGIN = {"Origin": "http://localhost:3000"}
 CREDS = {"email": "sasha@example.com", "password": "correct horse battery"}
@@ -29,14 +21,7 @@ def fakes() -> Fakes:
 async def client(fakes: Fakes) -> AsyncIterator[AsyncClient]:
     settings = Settings(env="test", sites_domain="localhost")
     container = make_async_container(
-        InfrastructureProvider(),
-        FastapiProvider(),
-        PlansProvider(),
-        IdentityProvider(),
-        MediaProvider(),
-        SitesProvider(),
-        DomainsProvider(),
-        CatalogProvider(),
+        *app_providers(),
         FakesProvider(fakes),
         context={Settings: settings},
     )

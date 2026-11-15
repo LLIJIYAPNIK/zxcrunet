@@ -94,7 +94,7 @@ def test_publish_needs_verified_email() -> None:
 
 def test_suspended_site_cannot_be_published_or_unpublished() -> None:
     site = make_site()
-    site.suspend()
+    site.suspend("spam", datetime(2026, 11, 11, tzinfo=UTC))
 
     with pytest.raises(SiteSuspendedError):
         site.publish(NOW, owner_email_verified=True)

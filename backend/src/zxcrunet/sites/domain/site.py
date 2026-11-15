@@ -32,6 +32,7 @@ SEO_TITLE_MAX = 70
 SEO_DESCRIPTION_MAX = 200
 DEFAULT_ACCENT = "#5ab9fc"
 DEFAULT_SECOND = "#ffb545"
+SUSPENSION_REASON_MAX = 500
 
 Block = dict[str, Any]
 Snapshot = dict[str, Any]
@@ -128,6 +129,11 @@ class Site:
     published_revision: int | None = None
     published: Snapshot | None = None
     pages: list[Page] = field(default_factory=list)
+    #: Set by the product owner when the site is taken down; shown to the site's owner.
+    suspension_reason: str = ""
+    suspended_at: datetime | None = None
+    #: Where `restore` returns the site: published or draft, as it was.
+    status_before_suspension: SiteStatus | None = None
 
     @classmethod
     def create(
@@ -265,5 +271,24 @@ class Site:
             raise SiteSuspendedError("Site is suspended")
         self.status = SiteStatus.DRAFT
 
-    def suspend(self) -> None:
+    @property
+    def is_suspended(self) -> bool:
+        return self.status == SiteStatus.SUSPENDED
+
+    def suspend(self, reason: str, now: datetime) -> None:
+        """Taken down by the product owner: the public address answers «unavailable»."""
+        if not self.is_suspended:
+            self.status_before_suspension = self.status
         self.status = SiteStatus.SUSPENDED
+        self.suspension_reason = " ".join(reason.split())[:SUSPENSION_REASON_MAX]
+        self.suspended_at = now
+
+    def restore(self) -> None:
+        """Undo `suspend`: back to published (if it was and has a snapshot) or draft."""
+        if not self.is_suspended:
+            return
+        was_published = self.status_before_suspension == SiteStatus.PUBLISHED
+        self.status = SiteStatus.PUBLISHED if was_published and self.published else SiteStatus.DRAFT
+        self.status_before_suspension = None
+        self.suspension_reason = ""
+        self.suspended_at = None

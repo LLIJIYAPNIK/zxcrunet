@@ -313,3 +313,13 @@ class SiteAtHost:
             return None
         domain = await self.domains.serving(host)
         return domain.site_id if domain else None
+
+
+class SiteHosts:
+    """Custom hosts that serve a site (the sites context drops their cache entries)."""
+
+    def __init__(self, domains: DomainRepository) -> None:
+        self.domains = domains
+
+    async def __call__(self, site_id: UUID) -> list[str]:
+        return [str(h) for h in await self.domains.serving_hosts(site_id)]

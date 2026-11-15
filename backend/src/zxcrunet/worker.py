@@ -69,3 +69,12 @@ async def check_due_domains() -> None:
         due = await (await request.get(DueDomains))()
     for domain_id in due:
         await check_domain.kiq(str(domain_id))
+
+
+@broker.task(task_name="flush_views", schedule=[{"cron": "*/5 * * * *"}])
+async def flush_views() -> None:
+    """Every five minutes: copy the live view counters to the daily aggregates."""
+    from zxcrunet.analytics.application.use_cases import FlushViews  # noqa: PLC0415
+
+    async with _app()() as request:
+        await (await request.get(FlushViews))()

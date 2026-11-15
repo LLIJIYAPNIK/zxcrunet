@@ -3,6 +3,7 @@ from collections.abc import AsyncIterator
 from dishka import Provider, Scope, from_context, provide
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
+from taskiq import AsyncBroker
 
 from zxcrunet.shared.application.clock import Clock, SystemClock
 from zxcrunet.shared.application.rate_limit import RateLimiter
@@ -48,6 +49,15 @@ class InfrastructureProvider(Provider):
     @provide(scope=Scope.APP)
     def rate_limiter(self, redis: Redis) -> RateLimiter:
         return RedisRateLimiter(redis)
+
+    @provide(scope=Scope.APP)
+    async def broker(self) -> AsyncIterator[AsyncBroker]:
+        """The Taskiq broker, started once for every producer of tasks in this process."""
+        from zxcrunet.worker import broker  # noqa: PLC0415 — the broker reads settings on import
+
+        await broker.startup()
+        yield broker
+        await broker.shutdown()
 
     @provide(scope=Scope.APP)
     def clock(self) -> Clock:

@@ -1,8 +1,7 @@
-from collections.abc import AsyncIterator
-
 from dishka import Provider, Scope, provide, provide_all
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
+from taskiq import AsyncBroker
 
 from zxcrunet.identity.application.emails import EmailTemplates
 from zxcrunet.identity.application.ports import (
@@ -61,12 +60,11 @@ class IdentityProvider(Provider):
         return RedisOneTimeTokenStore(redis)
 
     @provide(scope=Scope.APP)
-    async def mailer(self) -> AsyncIterator[Mailer]:
-        from zxcrunet.worker import broker, send_email  # noqa: PLC0415 — the broker reads settings on import
+    def mailer(self, _: AsyncBroker) -> Mailer:
+        # Asking for the broker makes sure it is started.
+        from zxcrunet.worker import send_email  # noqa: PLC0415 — the broker reads settings on import
 
-        await broker.startup()
-        yield QueuedMailer(send_email)
-        await broker.shutdown()
+        return QueuedMailer(send_email)
 
     @provide(scope=Scope.REQUEST)
     def users(self, session: AsyncSession) -> UserRepository:

@@ -13,6 +13,10 @@ from dishka import Provider, Scope, provide
 from zxcrunet.catalog.application.use_cases import CatalogCache, PublicCatalog
 from zxcrunet.catalog.domain.catalog import Post, Title, TitleKind
 from zxcrunet.catalog.domain.repository import PostRepository, TitleRepository
+from zxcrunet.domains.application.use_cases import CheckQueue, DnsResolver, TlsProbe
+from zxcrunet.domains.domain.domain import SERVING, CustomDomain, DnsRecords, Hostname
+from zxcrunet.domains.domain.errors import DomainTakenError
+from zxcrunet.domains.domain.repository import DomainRepository
 from zxcrunet.identity.application.ports import (
     EmailMessage,
     Mailer,
@@ -330,6 +334,96 @@ class InMemoryCatalogCache:
         self.data.pop(owner_id, None)
 
 
+class InMemoryDomains:
+    def __init__(self) -> None:
+        self.by_id: dict[UUID, CustomDomain] = {}
+
+    async def get(self, domain_id: UUID) -> CustomDomain | None:
+        domain = self.by_id.get(domain_id)
+        return copy.deepcopy(domain) if domain else None
+
+    async def list_by_site(self, site_id: UUID) -> list[CustomDomain]:
+        found = [d for d in self.by_id.values() if d.site_id == site_id]
+        return [copy.deepcopy(d) for d in sorted(found, key=lambda d: d.created_at)]
+
+    async def count_by_owner(self, owner_id: UUID) -> int:
+        return sum(1 for d in self.by_id.values() if d.owner_id == owner_id)
+
+    async def added_by_owner(self, owner_id: UUID, host: Hostname) -> bool:
+        return any(d.owner_id == owner_id and d.host == host for d in self.by_id.values())
+
+    async def claimed(self, host: Hostname, *, except_id: UUID | None = None) -> bool:
+        return any(
+            d.host == host and d.status in SERVING and d.id != except_id
+            for d in self.by_id.values()
+        )
+
+    async def serving(self, host: Hostname) -> CustomDomain | None:
+        for d in self.by_id.values():
+            if d.host == host and d.status in SERVING:
+                return copy.deepcopy(d)
+        return None
+
+    async def due(self, now: datetime, limit: int) -> list[UUID]:
+        due = [d for d in self.by_id.values() if d.next_check_at and d.next_check_at <= now]
+        return [d.id for d in sorted(due, key=lambda d: d.next_check_at or now)][:limit]
+
+    async def add(self, domain: CustomDomain) -> None:
+        self.by_id[domain.id] = copy.deepcopy(domain)
+
+    async def save(self, domain: CustomDomain) -> None:
+        if domain.status in SERVING and await self.claimed(domain.host, except_id=domain.id):
+            raise DomainTakenError("This domain is attached to another site")
+        self.by_id[domain.id] = copy.deepcopy(domain)
+
+    async def delete(self, domain: CustomDomain) -> None:
+        self.by_id.pop(domain.id, None)
+
+
+class FakeDns:
+    """Records per host; unknown hosts have none. `fail` makes DNS itself time out."""
+
+    def __init__(self) -> None:
+        self.records: dict[str, DnsRecords] = {}
+        self.fail = False
+        self.lookups: list[str] = []
+
+    def point(self, host: str, token: str, *ips: str) -> None:
+        self.records[host] = DnsRecords(txt=(token,), a=ips or ("203.0.113.10",))
+
+    async def lookup(self, host: Hostname) -> DnsRecords:
+        self.lookups.append(host.value)
+        if self.fail:
+            return DnsRecords(error="timeout")
+        return self.records.get(host.value, DnsRecords())
+
+
+class FakeTls:
+    def __init__(self) -> None:
+        self.issued: set[str] = set()
+
+    async def has_certificate(self, host: Hostname) -> bool:
+        return host.value in self.issued
+
+
+class RecordingCheckQueue:
+    def __init__(self) -> None:
+        self.queued: list[UUID] = []
+
+    async def enqueue(self, domain_id: UUID) -> None:
+        self.queued.append(domain_id)
+
+
+class FakeCustomHosts:
+    """The domains context as the sites context sees it: custom host → site id."""
+
+    def __init__(self) -> None:
+        self.sites: dict[str, UUID] = {}
+
+    async def site_at(self, host: str) -> UUID | None:
+        return self.sites.get(host)
+
+
 class Fakes:
     """One set of shared fakes for a test."""
 
@@ -352,6 +446,11 @@ class Fakes:
         self.titles = InMemoryTitles()
         self.posts = InMemoryPosts()
         self.catalog_cache = InMemoryCatalogCache()
+        self.domains = InMemoryDomains()
+        self.dns = FakeDns()
+        self.tls = FakeTls()
+        self.checks = RecordingCheckQueue()
+        self.custom_hosts = FakeCustomHosts()
 
 
 class FakesProvider(Provider):
@@ -434,3 +533,19 @@ class FakesProvider(Provider):
     @provide
     def catalog_cache(self) -> CatalogCache:
         return self.fakes.catalog_cache
+
+    @provide
+    def domains(self) -> DomainRepository:
+        return self.fakes.domains
+
+    @provide
+    def dns(self) -> DnsResolver:
+        return self.fakes.dns
+
+    @provide
+    def tls(self) -> TlsProbe:
+        return self.fakes.tls
+
+    @provide
+    def checks(self) -> CheckQueue:
+        return self.fakes.checks

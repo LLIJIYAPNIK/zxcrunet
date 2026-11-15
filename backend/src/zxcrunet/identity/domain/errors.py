@@ -28,3 +28,15 @@ class InvalidTokenError(InvalidInputError):
 
 class UserBlockedError(ForbiddenError):
     code = "user_blocked"
+
+
+class OwnerProtectedError(ForbiddenError):
+    """The product owner cannot be blocked or demoted from the admin panel."""
+
+    code = "owner_protected"
+
+
+class NotOwnerError(ForbiddenError):
+    """The admin panel is for the product owner only."""
+
+    code = "owner_only"

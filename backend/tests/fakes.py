@@ -4,19 +4,28 @@ import copy
 import secrets
 from collections import defaultdict
 from dataclasses import replace
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Literal
 from uuid import UUID
 
 from dishka import Provider, Scope, provide
 
+from zxcrunet.analytics.application.use_cases import ViewCounter
+from zxcrunet.analytics.domain.repository import ViewStats
+from zxcrunet.analytics.domain.views import DailyViews, DayTotal
 from zxcrunet.catalog.application.use_cases import CatalogCache, PublicCatalog
 from zxcrunet.catalog.domain.catalog import Post, Title, TitleKind
 from zxcrunet.catalog.domain.repository import PostRepository, TitleRepository
 from zxcrunet.domains.application.use_cases import CheckQueue, DnsResolver, TlsProbe
-from zxcrunet.domains.domain.domain import SERVING, CustomDomain, DnsRecords, Hostname
+from zxcrunet.domains.domain.domain import (
+    SERVING,
+    CustomDomain,
+    DnsRecords,
+    DomainStatus,
+    Hostname,
+)
 from zxcrunet.domains.domain.errors import DomainTakenError
-from zxcrunet.domains.domain.repository import DomainRepository
+from zxcrunet.domains.domain.repository import DomainFilter, DomainRepository
 from zxcrunet.identity.application.ports import (
     EmailMessage,
     Mailer,
@@ -26,19 +35,33 @@ from zxcrunet.identity.application.ports import (
     TokenPurpose,
 )
 from zxcrunet.identity.domain.errors import EmailTakenError
-from zxcrunet.identity.domain.repository import UserRepository
+from zxcrunet.identity.domain.repository import UserFilter, UserRepository
 from zxcrunet.identity.domain.user import Email, User
 from zxcrunet.media.application.use_cases import FileStorage, ImageProcessor, ProcessedImage
 from zxcrunet.media.domain.media import MediaFile, MediaRepository
+from zxcrunet.moderation.domain.report import AuditRecord, Report, ReportStatus
+from zxcrunet.moderation.domain.repository import (
+    AuditFilter,
+    AuditLog,
+    ReportFilter,
+    ReportRepository,
+)
 from zxcrunet.plans.domain.plan import FREE_PLAN_CODE, Plan
 from zxcrunet.plans.domain.repository import PlanRepository
+from zxcrunet.shared.application.admin import AuditEntry, AuditTrail
 from zxcrunet.shared.application.clock import Clock
 from zxcrunet.shared.application.rate_limit import RateLimiter
 from zxcrunet.shared.application.uow import UnitOfWork
+from zxcrunet.shared.domain.ids import uuid7
 from zxcrunet.sites.application.use_cases import ResolvedSite, SiteCache
 from zxcrunet.sites.domain.errors import SlugTakenError
-from zxcrunet.sites.domain.repository import ReservedSlugs, SiteRepository
-from zxcrunet.sites.domain.site import Site, Slug
+from zxcrunet.sites.domain.repository import (
+    ReservedName,
+    ReservedSlugs,
+    SiteFilter,
+    SiteRepository,
+)
+from zxcrunet.sites.domain.site import Site, SiteStatus, Slug
 
 FREE_PLAN = Plan(
     code=FREE_PLAN_CODE,
@@ -70,6 +93,31 @@ class InMemoryUsers:
 
     async def save(self, user: User) -> None:
         self.by_id[user.id] = replace(user)
+
+    async def search(self, where: UserFilter, offset: int, limit: int) -> tuple[list[User], int]:
+        found = [
+            u
+            for u in self.by_id.values()
+            if (not where.text or where.text in u.email.value)
+            and (not where.status or u.status == where.status)
+            and (not where.role or u.role == where.role)
+            and (not where.plan_code or u.plan_code == where.plan_code)
+        ]
+        found.sort(key=lambda u: u.created_at, reverse=True)
+        return [replace(u) for u in found[offset : offset + limit]], len(found)
+
+    async def emails(self, ids: set[UUID]) -> dict[UUID, str]:
+        return {i: self.by_id[i].email.value for i in ids if i in self.by_id}
+
+    async def count(self) -> int:
+        return len(self.by_id)
+
+    async def registrations_by_day(self, since: datetime) -> dict[date, int]:
+        days: dict[date, int] = defaultdict(int)
+        for u in self.by_id.values():
+            if u.created_at >= since:
+                days[u.created_at.date()] += 1
+        return dict(days)
 
 
 class FakeUoW:
@@ -164,8 +212,20 @@ class FixedClock:
 
 
 class InMemoryPlans:
+    def __init__(self) -> None:
+        self.by_code: dict[str, Plan] = {FREE_PLAN_CODE: FREE_PLAN}
+
     async def get(self, code: str) -> Plan | None:
-        return FREE_PLAN if code == FREE_PLAN_CODE else None
+        return self.by_code.get(code)
+
+    async def list(self) -> list[Plan]:
+        return sorted(self.by_code.values(), key=lambda p: (p.max_sites, p.code))
+
+    async def add(self, plan: Plan) -> None:
+        self.by_code[plan.code] = plan
+
+    async def save(self, plan: Plan) -> None:
+        self.by_code[plan.code] = plan
 
 
 class InMemorySites:
@@ -202,13 +262,55 @@ class InMemorySites:
     async def delete(self, site: Site) -> None:
         self.by_id.pop(site.id, None)
 
+    async def search(self, where: SiteFilter, offset: int, limit: int) -> tuple[list[Site], int]:
+        found = [
+            s
+            for s in self.by_id.values()
+            if (not where.text or where.text in s.slug.value or where.text in s.title.lower())
+            and (not where.status or s.status == where.status)
+            and (not where.kind or s.kind == where.kind)
+            and (not where.owner_id or s.owner_id == where.owner_id)
+            and (where.ids is None or s.id in where.ids)
+        ]
+        found.sort(key=lambda s: s.created_at, reverse=True)
+        return [copy.deepcopy(s) for s in found[offset : offset + limit]], len(found)
+
+    async def count_by_status(self) -> dict[SiteStatus, int]:
+        counts: dict[SiteStatus, int] = defaultdict(int)
+        for site in self.by_id.values():
+            counts[site.status] += 1
+        return dict(counts)
+
+    async def block_usage(self, limit: int) -> list[tuple[str, int, int]]:
+        blocks: dict[str, int] = defaultdict(int)
+        sites: dict[str, set[UUID]] = defaultdict(set)
+        for site in self.by_id.values():
+            if site.status != SiteStatus.PUBLISHED or not site.published:
+                continue
+            for page in site.published["pages"]:
+                for block in page["blocks"]:
+                    blocks[block["type"]] += 1
+                    sites[block["type"]].add(site.id)
+        rows = [(t, n, len(sites[t])) for t, n in blocks.items()]
+        return sorted(rows, key=lambda r: (-r[1], r[0]))[:limit]
+
 
 class InMemoryReservedSlugs:
     def __init__(self, names: set[str] | None = None) -> None:
-        self.names = names if names is not None else {"www", "api", "admin", "app"}
+        initial = names if names is not None else {"www", "api", "admin", "app"}
+        self.names: dict[str, str] = dict.fromkeys(initial, "")
 
     async def is_reserved(self, slug: Slug) -> bool:
         return slug.value in self.names
+
+    async def list(self) -> list[ReservedName]:
+        return [ReservedName(Slug(n), r) for n, r in sorted(self.names.items())]
+
+    async def add(self, name: ReservedName) -> None:
+        self.names[name.slug.value] = name.reason
+
+    async def remove(self, slug: Slug) -> bool:
+        return self.names.pop(slug.value, None) is not None
 
 
 class InMemorySiteCache:
@@ -368,6 +470,29 @@ class InMemoryDomains:
         due = [d for d in self.by_id.values() if d.next_check_at and d.next_check_at <= now]
         return [d.id for d in sorted(due, key=lambda d: d.next_check_at or now)][:limit]
 
+    async def serving_hosts(self, site_id: UUID) -> list[Hostname]:
+        return [d.host for d in self.by_id.values() if d.site_id == site_id and d.is_serving]
+
+    async def search(
+        self, where: DomainFilter, offset: int, limit: int
+    ) -> tuple[list[CustomDomain], int]:
+        found = [
+            d
+            for d in self.by_id.values()
+            if (not where.text or where.text in d.host.value)
+            and (not where.status or d.status == where.status)
+            and (not where.site_id or d.site_id == where.site_id)
+            and (not where.owner_id or d.owner_id == where.owner_id)
+        ]
+        found.sort(key=lambda d: d.created_at, reverse=True)
+        return [copy.deepcopy(d) for d in found[offset : offset + limit]], len(found)
+
+    async def count_by_status(self) -> dict[DomainStatus, int]:
+        counts: dict[DomainStatus, int] = defaultdict(int)
+        for d in self.by_id.values():
+            counts[d.status] += 1
+        return dict(counts)
+
     async def add(self, domain: CustomDomain) -> None:
         self.by_id[domain.id] = copy.deepcopy(domain)
 
@@ -423,6 +548,133 @@ class FakeCustomHosts:
     async def site_at(self, host: str) -> UUID | None:
         return self.sites.get(host)
 
+    async def hosts_of(self, site_id: UUID) -> list[str]:
+        return [host for host, owner in self.sites.items() if owner == site_id]
+
+
+class InMemoryReports:
+    def __init__(self) -> None:
+        self.by_id: dict[UUID, Report] = {}
+
+    async def get(self, report_id: UUID) -> Report | None:
+        report = self.by_id.get(report_id)
+        return copy.deepcopy(report) if report else None
+
+    async def search(
+        self, where: ReportFilter, offset: int, limit: int
+    ) -> tuple[list[Report], int]:
+        found = [
+            r
+            for r in self.by_id.values()
+            if (not where.status or r.status == where.status)
+            and (not where.site_id or r.site_id == where.site_id)
+        ]
+        found.sort(key=lambda r: r.created_at, reverse=where.status != ReportStatus.OPEN)
+        return [copy.deepcopy(r) for r in found[offset : offset + limit]], len(found)
+
+    async def open_for_site(self, site_id: UUID) -> list[Report]:
+        found = [r for r in self.by_id.values() if r.site_id == site_id and r.is_open]
+        return [copy.deepcopy(r) for r in found]
+
+    async def count_by_status(self) -> dict[ReportStatus, int]:
+        counts: dict[ReportStatus, int] = defaultdict(int)
+        for r in self.by_id.values():
+            counts[r.status] += 1
+        return dict(counts)
+
+    async def add(self, report: Report) -> None:
+        self.by_id[report.id] = copy.deepcopy(report)
+
+    async def save(self, report: Report) -> None:
+        self.by_id[report.id] = copy.deepcopy(report)
+
+
+class InMemoryAuditLog:
+    """Both the AuditTrail port and the audit log repository."""
+
+    def __init__(self) -> None:
+        self.records: list[AuditRecord] = []
+
+    @property
+    def actions(self) -> list[str]:
+        return [r.action for r in self.records]
+
+    async def record(self, entry: AuditEntry) -> None:
+        await self.add(
+            AuditRecord(
+                id=uuid7(),
+                actor_id=entry.actor_id,
+                action=entry.action,
+                target_type=entry.target_type,
+                target_id=entry.target_id,
+                at=entry.at,
+                details=dict(entry.details),
+            )
+        )
+
+    async def add(self, record: AuditRecord) -> None:
+        self.records.append(record)
+
+    async def search(
+        self, where: AuditFilter, offset: int, limit: int
+    ) -> tuple[list[AuditRecord], int]:
+        found = [
+            r
+            for r in reversed(self.records)
+            if (not where.target_type or r.target_type == where.target_type)
+            and (not where.target_id or r.target_id == where.target_id)
+            and (not where.actor_id or r.actor_id == where.actor_id)
+        ]
+        return found[offset : offset + limit], len(found)
+
+
+class InMemoryViewCounter:
+    def __init__(self) -> None:
+        self.salts: dict[date, str] = {}
+        self.views: dict[tuple[date, UUID], int] = defaultdict(int)
+        self.visitors: dict[tuple[date, UUID], set[str]] = defaultdict(set)
+
+    async def salt(self, day: date) -> str:
+        return self.salts.setdefault(day, secrets.token_hex(8))
+
+    async def hit(self, day: date, site_id: UUID, visitor: str) -> None:
+        self.views[(day, site_id)] += 1
+        self.visitors[(day, site_id)].add(visitor)
+
+    async def snapshot(self, day: date) -> list[DailyViews]:
+        return [
+            DailyViews(site, d, count, len(self.visitors[(d, site)]))
+            for (d, site), count in sorted(self.views.items(), key=lambda kv: str(kv[0][1]))
+            if d == day
+        ]
+
+
+class InMemoryViewStats:
+    def __init__(self) -> None:
+        self.rows: dict[tuple[UUID, date], DailyViews] = {}
+
+    async def store(self, rows: list[DailyViews]) -> None:
+        for row in rows:
+            old = self.rows.get((row.site_id, row.day))
+            best = row
+            if old is not None:
+                best = replace(
+                    row, views=max(row.views, old.views), visitors=max(row.visitors, old.visitors)
+                )
+            self.rows[(row.site_id, row.day)] = best
+
+    async def totals(self, since: date) -> list[DayTotal]:
+        days: dict[date, list[int]] = defaultdict(lambda: [0, 0])
+        for row in self.rows.values():
+            if row.day >= since:
+                days[row.day][0] += row.views
+                days[row.day][1] += row.visitors
+        return [DayTotal(d, v[0], v[1]) for d, v in sorted(days.items())]
+
+    async def for_site(self, site_id: UUID, since: date) -> list[DayTotal]:
+        rows = [r for r in self.rows.values() if r.site_id == site_id and r.day >= since]
+        return [DayTotal(r.day, r.views, r.visitors) for r in sorted(rows, key=lambda r: r.day)]
+
 
 class Fakes:
     """One set of shared fakes for a test."""
@@ -451,6 +703,10 @@ class Fakes:
         self.tls = FakeTls()
         self.checks = RecordingCheckQueue()
         self.custom_hosts = FakeCustomHosts()
+        self.reports = InMemoryReports()
+        self.audit = InMemoryAuditLog()
+        self.view_counter = InMemoryViewCounter()
+        self.view_stats = InMemoryViewStats()
 
 
 class FakesProvider(Provider):
@@ -549,3 +805,23 @@ class FakesProvider(Provider):
     @provide
     def checks(self) -> CheckQueue:
         return self.fakes.checks
+
+    @provide
+    def reports(self) -> ReportRepository:
+        return self.fakes.reports
+
+    @provide
+    def audit_trail(self) -> AuditTrail:
+        return self.fakes.audit
+
+    @provide
+    def audit_log(self) -> AuditLog:
+        return self.fakes.audit
+
+    @provide
+    def view_counter(self) -> ViewCounter:
+        return self.fakes.view_counter
+
+    @provide
+    def view_stats(self) -> ViewStats:
+        return self.fakes.view_stats

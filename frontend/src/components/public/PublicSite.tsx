@@ -4,6 +4,7 @@ import { CWRAP, Blocks } from "@/blocks/renderers";
 import { TitlePage } from "@/components/catalog/TitlePage";
 import { META, anchorId, type AnyBlock } from "@/blocks/schemas";
 import { MadeWith } from "@/components/brand/MadeWith";
+import { ReportButton, ViewBeacon } from "@/components/public/SiteEvents";
 import { ThemeScope } from "@/components/theme/ThemeScope";
 import { SERVICE_DOMAIN } from "@/config/site";
 import { cn } from "@/lib/cn";
@@ -30,6 +31,8 @@ type PublicSiteProps = {
   title?: Title;
   /** Editor preview: links do not leave the editor, no entrance animation. */
   preview?: boolean;
+  /** The live site at its public address: count views and offer «Пожаловаться». */
+  live?: boolean;
 };
 
 function href(path: string): string {
@@ -73,6 +76,7 @@ export function PublicSite({
   catalog = EMPTY_CATALOG,
   title,
   preview = false,
+  live = false,
 }: PublicSiteProps) {
   const t = ru.publicSite;
   const blocks = page.blocks as unknown as AnyBlock[];
@@ -156,6 +160,7 @@ export function PublicSite({
         )}
       </main>
 
+      {live && <ViewBeacon />}
       <footer className="border-t border-line">
         <div
           className={cn(
@@ -164,7 +169,10 @@ export function PublicSite({
           )}
         >
           <span>{content.title}</span>
-          <MadeWith />
+          <span className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            {live && <ReportButton />}
+            <MadeWith />
+          </span>
         </div>
       </footer>
     </ThemeScope>

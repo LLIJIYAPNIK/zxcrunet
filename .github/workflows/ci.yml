@@ -132,6 +132,8 @@ jobs:
       NEXT_PUBLIC_SITE_URL_TEMPLATE: http://{host}:3100
       MAILPIT_URL: http://localhost:8025
       E2E_FULL: "1"
+      E2E_OWNER_EMAIL: owner-e2e@example.com
+      E2E_OWNER_PASSWORD: correct horse battery
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
       - uses: actions/checkout@v5
@@ -144,6 +146,7 @@ jobs:
         run: |
           uv sync --locked
           uv run alembic upgrade head
+          echo "$E2E_OWNER_PASSWORD" | .venv/bin/python -m zxcrunet.cli create-owner "$E2E_OWNER_EMAIL" --password-stdin
           # Run straight from the venv: a long-lived `uv run` holds the uv cache lock,
           # and the setup-uv post step (`uv cache prune`) then times out waiting for it.
           nohup .venv/bin/uvicorn --factory zxcrunet.main:create_app --port 8000 > ../api.log 2>&1 &

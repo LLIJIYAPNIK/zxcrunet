@@ -29,6 +29,9 @@ class SiteModel(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    suspension_reason: Mapped[str] = mapped_column(String(500), server_default="")
+    suspended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    status_before_suspension: Mapped[str | None] = mapped_column(String(16))
 
     pages: Mapped[list["PageModel"]] = relationship(
         back_populates="site",

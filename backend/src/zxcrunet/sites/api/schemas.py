@@ -87,6 +87,8 @@ class SiteSummaryOut(BaseModel):
     created_at: datetime
     updated_at: datetime | None
     published_at: datetime | None
+    #: Why the product owner took the site down (empty unless `suspended`).
+    suspension_reason: str
 
     @classmethod
     def of(cls, site: Site, host: str) -> "SiteSummaryOut":
@@ -103,6 +105,7 @@ class SiteSummaryOut(BaseModel):
             created_at=site.created_at,
             updated_at=site.updated_at,
             published_at=site.published_at,
+            suspension_reason=site.suspension_reason,
         )
 
 

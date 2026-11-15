@@ -3,18 +3,11 @@ from typing import Any
 
 import pytest
 from dishka import make_async_container
-from dishka.integrations.fastapi import FastapiProvider
 from httpx import ASGITransport, AsyncClient
 
 from tests.fakes import Fakes, FakesProvider
-from zxcrunet.domains.di import DomainsProvider
-from zxcrunet.identity.di import IdentityProvider
-from zxcrunet.main import create_app
-from zxcrunet.media.di import MediaProvider
-from zxcrunet.plans.di import PlansProvider
+from zxcrunet.main import app_providers, create_app
 from zxcrunet.shared.config import Settings
-from zxcrunet.shared.di import InfrastructureProvider
-from zxcrunet.sites.di import SitesProvider
 
 ORIGIN = {"Origin": "http://localhost:3000"}
 CREDS = {"email": "anna@example.com", "password": "correct horse battery"}
@@ -30,13 +23,7 @@ def fakes() -> Fakes:
 async def client(fakes: Fakes) -> AsyncIterator[AsyncClient]:
     settings = Settings(env="test", sites_domain="localhost", domains_server_ipv4=[IP])
     container = make_async_container(
-        InfrastructureProvider(),
-        FastapiProvider(),
-        PlansProvider(),
-        IdentityProvider(),
-        MediaProvider(),
-        SitesProvider(),
-        DomainsProvider(),
+        *app_providers(),
         FakesProvider(fakes),
         context={Settings: settings},
     )
@@ -153,13 +140,7 @@ async def test_ask_is_only_for_the_inside(client: AsyncClient, fakes: Fakes) -> 
 async def test_ask_refuses_public_peers(fakes: Fakes) -> None:
     settings = Settings(env="test", sites_domain="localhost")
     container = make_async_container(
-        InfrastructureProvider(),
-        FastapiProvider(),
-        PlansProvider(),
-        IdentityProvider(),
-        MediaProvider(),
-        SitesProvider(),
-        DomainsProvider(),
+        *app_providers(),
         FakesProvider(fakes),
         context={Settings: settings},
     )

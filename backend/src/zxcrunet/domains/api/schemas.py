@@ -40,6 +40,8 @@ class DomainOut(BaseModel):
     next_check_at: datetime | None
     verified_at: datetime | None
     activated_at: datetime | None
+    #: Revoked by the service: no checks, it can only be removed.
+    revoked: bool
 
     @classmethod
     def of(cls, domain: CustomDomain, server: ServerAddresses) -> "DomainOut":
@@ -66,6 +68,7 @@ class DomainOut(BaseModel):
             next_check_at=domain.next_check_at,
             verified_at=domain.verified_at,
             activated_at=domain.activated_at,
+            revoked=domain.is_revoked,
         )
 
 

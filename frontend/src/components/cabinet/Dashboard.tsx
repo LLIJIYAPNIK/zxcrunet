@@ -1,3 +1,4 @@
+import { ButtonLink } from "@/components/ui/Button";
 import { Card, CardLink } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
 import { Icon } from "@/components/ui/Icon";
@@ -25,7 +26,11 @@ export async function Dashboard({ searchParams }: { searchParams: Promise<{ slug
           </h1>
         </div>
         <div className="flex items-center gap-3">
-          {user.role === "owner" && <Chip variant="accent">{t.owner}</Chip>}
+          {user.role === "owner" && (
+            <ButtonLink href="/admin" size="sm" variant="secondary">
+              {t.adminLink}
+            </ButtonLink>
+          )}
           <LogoutButton />
         </div>
       </div>

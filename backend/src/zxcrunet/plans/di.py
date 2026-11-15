@@ -1,6 +1,7 @@
-from dishka import Provider, Scope, provide
+from dishka import Provider, Scope, provide, provide_all
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from zxcrunet.plans.application.admin import CreatePlan, ListPlans, UpdatePlan
 from zxcrunet.plans.application.service import PlanService
 from zxcrunet.plans.domain.repository import PlanRepository
 from zxcrunet.plans.infrastructure.repository import SqlPlanRepository
@@ -14,3 +15,4 @@ class PlansProvider(Provider):
         return SqlPlanRepository(session)
 
     service = provide(PlanService)
+    admin = provide_all(ListPlans, CreatePlan, UpdatePlan)

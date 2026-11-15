@@ -1,4 +1,9 @@
-from zxcrunet.shared.domain.errors import ConflictError, InvalidInputError, NotFoundError
+from zxcrunet.shared.domain.errors import (
+    ConflictError,
+    ForbiddenError,
+    InvalidInputError,
+    NotFoundError,
+)
 
 
 class InvalidHostError(InvalidInputError):
@@ -23,3 +28,9 @@ class DomainTakenError(ConflictError):
 
 class DomainNotFoundError(NotFoundError):
     code = "domain_not_found"
+
+
+class DomainRevokedError(ForbiddenError):
+    """The product owner revoked the domain; it can only be removed."""
+
+    code = "domain_revoked"

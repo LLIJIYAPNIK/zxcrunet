@@ -29,6 +29,9 @@ class CustomHosts(Protocol):
 
     async def site_at(self, host: str) -> UUID | None: ...
 
+    async def hosts_of(self, site_id: UUID) -> list[str]:
+        """Custom hosts that currently serve the site (their cache entries go stale)."""
+
 
 class SiteCache(Protocol):
     """Cache of public host → resolved site payload (None is cached as «no site»)."""

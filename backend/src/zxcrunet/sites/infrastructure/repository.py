@@ -4,12 +4,13 @@ from typing import Literal
 from uuid import UUID
 
 from redis.asyncio import Redis
-from sqlalchemy import exists, func, select
+from sqlalchemy import ColumnElement, exists, func, or_, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from zxcrunet.sites.application.use_cases import ResolvedSite
 from zxcrunet.sites.domain.errors import SlugTakenError
+from zxcrunet.sites.domain.repository import ReservedName, SiteFilter
 from zxcrunet.sites.domain.site import Page, Site, SiteKind, SiteStatus, Slug, Theme
 from zxcrunet.sites.infrastructure.models import PageModel, ReservedSlugModel, SiteModel
 
@@ -31,6 +32,11 @@ def _to_domain(row: SiteModel) -> Site:
         created_at=row.created_at,
         updated_at=row.updated_at,
         published_at=row.published_at,
+        suspension_reason=row.suspension_reason,
+        suspended_at=row.suspended_at,
+        status_before_suspension=(
+            SiteStatus(row.status_before_suspension) if row.status_before_suspension else None
+        ),
         pages=[
             Page(id=p.id, path=p.path, title=p.title, position=p.position, blocks=list(p.blocks))
             for p in row.pages
@@ -54,6 +60,11 @@ def _apply(row: SiteModel, site: Site) -> None:
     row.created_at = site.created_at
     row.updated_at = site.updated_at
     row.published_at = site.published_at
+    row.suspension_reason = site.suspension_reason
+    row.suspended_at = site.suspended_at
+    row.status_before_suspension = (
+        site.status_before_suspension.value if site.status_before_suspension else None
+    )
 
     existing = {p.id: p for p in row.pages}
     wanted: list[PageModel] = []
@@ -65,6 +76,20 @@ def _apply(row: SiteModel, site: Site) -> None:
         model.blocks = list(page.blocks)
         wanted.append(model)
     row.pages = wanted
+
+
+_BLOCK_USAGE = text(
+    """
+    SELECT block ->> 'type' AS type, count(*) AS blocks, count(DISTINCT s.id) AS sites
+    FROM sites AS s
+    CROSS JOIN LATERAL jsonb_array_elements(s.published -> 'pages') AS page
+    CROSS JOIN LATERAL jsonb_array_elements(page -> 'blocks') AS block
+    WHERE s.status = :status AND s.published IS NOT NULL
+    GROUP BY 1
+    ORDER BY 2 DESC, 1
+    LIMIT :limit
+    """
+)
 
 
 class SqlSiteRepository:
@@ -116,6 +141,46 @@ class SqlSiteRepository:
             await self._session.delete(row)
             await self._session.flush()
 
+    async def search(self, where: SiteFilter, offset: int, limit: int) -> tuple[list[Site], int]:
+        conditions: list[ColumnElement[bool]] = []
+        if where.text:
+            conditions.append(
+                or_(
+                    SiteModel.slug.icontains(where.text, autoescape=True),
+                    SiteModel.title.icontains(where.text, autoescape=True),
+                )
+            )
+        if where.status:
+            conditions.append(SiteModel.status == where.status.value)
+        if where.kind:
+            conditions.append(SiteModel.kind == where.kind.value)
+        if where.owner_id:
+            conditions.append(SiteModel.owner_id == where.owner_id)
+        if where.ids is not None:
+            conditions.append(SiteModel.id.in_(where.ids))
+        total = await self._session.scalar(
+            select(func.count()).select_from(SiteModel).where(*conditions)
+        )
+        rows = await self._session.scalars(
+            select(SiteModel)
+            .where(*conditions)
+            .order_by(SiteModel.created_at.desc(), SiteModel.id.desc())
+            .offset(offset)
+            .limit(limit)
+        )
+        return [_to_domain(r) for r in rows], int(total or 0)
+
+    async def count_by_status(self) -> dict[SiteStatus, int]:
+        rows = await self._session.execute(
+            select(SiteModel.status, func.count()).group_by(SiteModel.status)
+        )
+        return {SiteStatus(row[0]): int(row[1]) for row in rows}
+
+    async def block_usage(self, limit: int) -> list[tuple[str, int, int]]:
+        """(block type, blocks, sites) over the published versions of published sites."""
+        rows = await self._session.execute(_BLOCK_USAGE, {"status": "published", "limit": limit})
+        return [(str(row[0]), int(row[1]), int(row[2])) for row in rows]
+
     async def _flush(self) -> None:
         try:
             await self._session.flush()
@@ -130,6 +195,24 @@ class SqlReservedSlugs:
 
     async def is_reserved(self, slug: Slug) -> bool:
         return await self._session.get(ReservedSlugModel, slug.value) is not None
+
+    async def list(self) -> list[ReservedName]:
+        rows = await self._session.scalars(
+            select(ReservedSlugModel).order_by(ReservedSlugModel.slug)
+        )
+        return [ReservedName(Slug(r.slug), r.reason) for r in rows]
+
+    async def add(self, name: ReservedName) -> None:
+        self._session.add(ReservedSlugModel(slug=name.slug.value, reason=name.reason))
+        await self._session.flush()
+
+    async def remove(self, slug: Slug) -> bool:
+        row = await self._session.get(ReservedSlugModel, slug.value)
+        if row is None:
+            return False
+        await self._session.delete(row)
+        await self._session.flush()
+        return True
 
 
 class RedisSiteCache:

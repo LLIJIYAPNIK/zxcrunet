@@ -284,10 +284,12 @@ function DomainItem({ domain, server, onChange, onRemove }: DomainItemProps) {
             : t.neverChecked}
         </span>
         <span className="flex flex-wrap gap-2">
-          <Button size="sm" variant="secondary" onClick={() => void check()} disabled={checking}>
-            <Icon name="refresh" size={16} className={cn(checking && "animate-spin")} />
-            {checking ? t.checking : t.checkNow}
-          </Button>
+          {!domain.revoked && (
+            <Button size="sm" variant="secondary" onClick={() => void check()} disabled={checking}>
+              <Icon name="refresh" size={16} className={cn(checking && "animate-spin")} />
+              {checking ? t.checking : t.checkNow}
+            </Button>
+          )}
           <Button
             size="sm"
             variant="secondary"

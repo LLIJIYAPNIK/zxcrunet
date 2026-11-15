@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import exists, func, select
+from sqlalchemy import ColumnElement, exists, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,6 +13,7 @@ from zxcrunet.domains.domain.domain import (
     Problem,
 )
 from zxcrunet.domains.domain.errors import DomainAlreadyAddedError, DomainTakenError
+from zxcrunet.domains.domain.repository import DomainFilter
 from zxcrunet.domains.infrastructure.models import CustomDomainModel
 
 _SERVING = [s.value for s in SERVING]
@@ -35,6 +36,7 @@ def _to_domain(row: CustomDomainModel) -> CustomDomain:
         next_check_at=row.next_check_at,
         verified_at=row.verified_at,
         activated_at=row.activated_at,
+        revoked_at=row.revoked_at,
     )
 
 
@@ -53,6 +55,7 @@ def _apply(row: CustomDomainModel, domain: CustomDomain) -> None:
     row.next_check_at = domain.next_check_at
     row.verified_at = domain.verified_at
     row.activated_at = domain.activated_at
+    row.revoked_at = domain.revoked_at
 
 
 class SqlDomainRepository:
@@ -109,6 +112,44 @@ class SqlDomainRepository:
             .limit(limit)
         )
         return list(rows)
+
+    async def serving_hosts(self, site_id: UUID) -> list[Hostname]:
+        rows = await self._session.scalars(
+            select(CustomDomainModel.host).where(
+                CustomDomainModel.site_id == site_id, CustomDomainModel.status.in_(_SERVING)
+            )
+        )
+        return [Hostname(h) for h in rows]
+
+    async def search(
+        self, where: DomainFilter, offset: int, limit: int
+    ) -> tuple[list[CustomDomain], int]:
+        conditions: list[ColumnElement[bool]] = []
+        if where.text:
+            conditions.append(CustomDomainModel.host.contains(where.text, autoescape=True))
+        if where.status:
+            conditions.append(CustomDomainModel.status == where.status.value)
+        if where.site_id:
+            conditions.append(CustomDomainModel.site_id == where.site_id)
+        if where.owner_id:
+            conditions.append(CustomDomainModel.owner_id == where.owner_id)
+        total = await self._session.scalar(
+            select(func.count()).select_from(CustomDomainModel).where(*conditions)
+        )
+        rows = await self._session.scalars(
+            select(CustomDomainModel)
+            .where(*conditions)
+            .order_by(CustomDomainModel.created_at.desc(), CustomDomainModel.id.desc())
+            .offset(offset)
+            .limit(limit)
+        )
+        return [_to_domain(r) for r in rows], int(total or 0)
+
+    async def count_by_status(self) -> dict[DomainStatus, int]:
+        rows = await self._session.execute(
+            select(CustomDomainModel.status, func.count()).group_by(CustomDomainModel.status)
+        )
+        return {DomainStatus(row[0]): int(row[1]) for row in rows}
 
     async def add(self, domain: CustomDomain) -> None:
         row = CustomDomainModel(id=domain.id)

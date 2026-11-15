@@ -3,6 +3,15 @@ from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from taskiq import AsyncBroker
 
+from zxcrunet.identity.application.admin import (
+    AuthorizeOwner,
+    BlockUser,
+    ChangeUserPlan,
+    GetUser,
+    ListUsers,
+    UnblockUser,
+    UserDirectory,
+)
 from zxcrunet.identity.application.emails import EmailTemplates
 from zxcrunet.identity.application.ports import (
     Mailer,
@@ -80,5 +89,12 @@ class IdentityProvider(Provider):
         RequestPasswordReset,
         ResetPassword,
         CreateOwner,
+        AuthorizeOwner,
+        ListUsers,
+        GetUser,
+        BlockUser,
+        UnblockUser,
+        ChangeUserPlan,
+        UserDirectory,
         scope=Scope.REQUEST,
     )

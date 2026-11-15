@@ -87,8 +87,13 @@ jobs:
         run: docker build -t zxc-caddy infra/caddy
       - name: Production and development configs are valid
         run: |
-          docker run --rm -e ACME_EMAIL=ops@example.com -e CLOUDFLARE_API_TOKEN=dummy             zxc-caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
-          docker run --rm -v "$PWD/infra/caddy/Caddyfile.dev:/etc/caddy/Caddyfile:ro"             zxc-caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+          # The Cloudflare plugin checks the token format on provision, so the placeholder
+          # has to look like a real token (35-50 chars of [A-Za-z0-9_-]).
+          docker run --rm -e ACME_EMAIL=ops@example.com \
+            -e CLOUDFLARE_API_TOKEN=ci0placeholder0token0000000000000000000000 \
+            zxc-caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+          docker run --rm -v "$PWD/infra/caddy/Caddyfile.dev:/etc/caddy/Caddyfile:ro" \
+            zxc-caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 
   e2e:
     runs-on: ubuntu-latest
@@ -139,8 +144,10 @@ jobs:
         run: |
           uv sync --locked
           uv run alembic upgrade head
-          nohup uv run uvicorn --factory zxcrunet.main:create_app --port 8000 > ../api.log 2>&1 &
-          nohup uv run taskiq worker zxcrunet.worker:broker > ../worker.log 2>&1 &
+          # Run straight from the venv: a long-lived `uv run` holds the uv cache lock,
+          # and the setup-uv post step (`uv cache prune`) then times out waiting for it.
+          nohup .venv/bin/uvicorn --factory zxcrunet.main:create_app --port 8000 > ../api.log 2>&1 &
+          nohup .venv/bin/taskiq worker zxcrunet.worker:broker > ../worker.log 2>&1 &
           for i in $(seq 1 60); do curl -sf localhost:8000/api/health/ready && break; sleep 1; done
           curl -sf localhost:8000/api/health/ready
       - uses: pnpm/action-setup@v4

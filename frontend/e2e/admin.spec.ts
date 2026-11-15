@@ -38,9 +38,11 @@ test("report → take down → restore → block, all in the audit log", async (
   const { id: siteId } = (await created.json()) as { id: string };
   await page.request.post(`${ORIGIN}/api/sites/${siteId}/publish`, { headers: { Origin: ORIGIN } });
 
-  // Not the owner: the admin panel does not exist for them.
-  const forbidden = await page.goto(`${ORIGIN}/admin`);
-  expect(forbidden?.status()).toBe(404);
+  // Not the owner: the admin panel does not exist for them. A streamed page always starts
+  // with 200 (Cache Components), so the 404 is what the page says, not its status code.
+  await page.goto(`${ORIGIN}/admin`);
+  await expect(page.getByText("404")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Обзор" })).toHaveCount(0);
 
   // A guest reports the site from its footer.
   const guest = await browser.newPage();

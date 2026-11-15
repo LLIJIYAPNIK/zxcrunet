@@ -44,7 +44,7 @@ async def user_with_site(client: AsyncClient, mailer: CapturingMailer) -> dict[s
     site_id: str = site.json()["id"]
     await client.post(f"/api/sites/{site_id}/publish")
     return {
-        "user_id": registered.json()["user"]["id"],
+        "user_id": registered.json()["id"],
         "email": email,
         "site_id": site_id,
         "slug": slug,

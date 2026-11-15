@@ -1,0 +1,42 @@
+# Development: HTTPS from Caddy's own CA and on-demand certificates for custom domains,
+# to try the whole path locally. The app runs on the host (uvicorn :8000, next dev :3000).
+#
+#   caddy run --config infra/caddy/Caddyfile.dev
+#   docker compose -f infra/docker-compose.dev.yml --profile caddy up -d caddy
+#
+# The browser has to trust Caddy's root certificate (`caddy trust`). In the backend's
+# .env set ZXC_TLS_PROBE_VERIFY=false: the system does not trust that CA.
+
+{
+	local_certs
+	on_demand_tls {
+		ask http://{$API_UPSTREAM:localhost:8000}/internal/tls/ask
+	}
+}
+
+(zxcrunet) {
+	handle /internal/* {
+		respond 404
+	}
+	handle /api/* {
+		reverse_proxy {$API_UPSTREAM:localhost:8000}
+	}
+	handle /media/* {
+		reverse_proxy {$API_UPSTREAM:localhost:8000}
+	}
+	handle {
+		reverse_proxy {$WEB_UPSTREAM:localhost:3000}
+	}
+}
+
+localhost, *.localhost {
+	tls internal
+	import zxcrunet
+}
+
+https:// {
+	tls {
+		on_demand
+	}
+	import zxcrunet
+}

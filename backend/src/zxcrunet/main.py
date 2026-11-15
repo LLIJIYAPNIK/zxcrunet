@@ -11,6 +11,9 @@ from zxcrunet import __version__
 from zxcrunet.catalog.api.router import public_router as catalog_public_router
 from zxcrunet.catalog.api.router import router as catalog_router
 from zxcrunet.catalog.di import CatalogProvider
+from zxcrunet.domains.api.router import internal_router as domains_internal_router
+from zxcrunet.domains.api.router import router as domains_router
+from zxcrunet.domains.di import DomainsProvider
 from zxcrunet.identity.api.router import router as auth_router
 from zxcrunet.identity.di import IdentityProvider
 from zxcrunet.media.api.router import router as media_router
@@ -37,6 +40,7 @@ def make_container(settings: Settings) -> AsyncContainer:
         MediaProvider(),
         SitesProvider(),
         CatalogProvider(),
+        DomainsProvider(),
         context={Settings: settings},
     )
 
@@ -70,6 +74,8 @@ def create_app(
     app.include_router(media_router)
     app.include_router(catalog_router)
     app.include_router(catalog_public_router)
+    app.include_router(domains_router)
+    app.include_router(domains_internal_router)
     # Uploaded files. In production Caddy serves this folder directly.
     media_root = Path(settings.media_root)
     media_root.mkdir(parents=True, exist_ok=True)

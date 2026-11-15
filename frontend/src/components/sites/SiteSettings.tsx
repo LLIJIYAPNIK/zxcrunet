@@ -19,9 +19,10 @@ import { useConfirm } from "@/components/ui/Dialog";
 import { Field, Input, Textarea } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
 import { displayAddress, siteUrl } from "@/config/site";
-import { api, type ApiResult, type Site, type SitePage } from "@/lib/api/client";
+import { api, type ApiResult, type Site, type SiteDomains, type SitePage } from "@/lib/api/client";
 import { ru } from "@/i18n/ru";
 
+import { CustomDomains } from "./CustomDomains";
 import { siteErrorText } from "./errors";
 import { SiteStatusChip } from "./SiteStatusChip";
 import { SlugField, type SlugState } from "./SlugField";
@@ -54,9 +55,9 @@ function initials(title: string): string {
   );
 }
 
-type SiteSettingsProps = { initial: Site; emailVerified: boolean };
+type SiteSettingsProps = { initial: Site; emailVerified: boolean; domains: SiteDomains | null };
 
-export function SiteSettings({ initial, emailVerified }: SiteSettingsProps) {
+export function SiteSettings({ initial, emailVerified, domains }: SiteSettingsProps) {
   const router = useRouter();
   const [site, setSite] = useState(initial);
   const [notice, setNotice] = useState<Notice>(null);
@@ -314,6 +315,8 @@ export function SiteSettings({ initial, emailVerified }: SiteSettingsProps) {
               </Button>
             </form>
           </Section>
+
+          <CustomDomains siteId={site.id} live={live} initial={domains} />
 
           <Section title={t.edit.pages}>
             <ul className="flex flex-col gap-3">

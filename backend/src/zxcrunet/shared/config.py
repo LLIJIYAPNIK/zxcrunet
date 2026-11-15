@@ -38,6 +38,17 @@ class Settings(BaseSettings):
     media_root: str = "./data/uploads"
     media_url_prefix: str = "/media"
 
+    # Custom domains: where their A/AAAA records must point (the server's public IPs).
+    domains_server_ipv4: list[str] = Field(default_factory=lambda: ["127.0.0.1"])
+    domains_server_ipv6: list[str] = Field(default_factory=list)
+    # Nameservers for domain checks; empty means the system resolver.
+    dns_nameservers: list[str] = Field(default_factory=lambda: ["1.1.1.1", "8.8.8.8"])
+    dns_timeout_seconds: float = 5.0
+    # The HTTPS probe also waits while Caddy obtains the certificate.
+    tls_probe_timeout_seconds: float = 30.0
+    # Off in development: Caddy's internal CA is not trusted by the system.
+    tls_probe_verify: bool = True
+
     smtp_host: str = "localhost"
     smtp_port: int = 1025
     smtp_username: str | None = None

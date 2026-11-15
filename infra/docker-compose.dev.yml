@@ -36,6 +36,23 @@ services:
       - "1025:1025" # SMTP
       - "8025:8025" # веб-интерфейс: http://localhost:8025
 
+  # Optional: HTTPS and custom domains locally (--profile caddy). The app runs on the host.
+  caddy:
+    image: caddy:2.10.2
+    profiles: ["caddy"]
+    environment:
+      API_UPSTREAM: host.docker.internal:8000
+      WEB_UPSTREAM: host.docker.internal:3000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./caddy/Caddyfile.dev:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+
 volumes:
   postgres-data:
   redis-data:
+  caddy-data:

@@ -230,6 +230,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/domains/{domain_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Domain */
+        delete: operations["remove_domain_api_domains__domain_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/domains/{domain_id}/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Check Domain */
+        post: operations["check_domain_api_domains__domain_id__check_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -381,6 +415,24 @@ export interface paths {
         patch: operations["update_site_api_sites__site_id__patch"];
         trace?: never;
     };
+    "/api/sites/{site_id}/domains": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Domains */
+        get: operations["list_domains_api_sites__site_id__domains_get"];
+        put?: never;
+        /** Add Domain */
+        post: operations["add_domain_api_sites__site_id__domains_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sites/{site_id}/pages": {
         parameters: {
             query?: never;
@@ -471,6 +523,11 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AddDomainIn */
+        AddDomainIn: {
+            /** Host */
+            host: string;
+        };
         /**
          * BlockIn
          * @description Envelope the editor sends; `settings` is checked against the type's schema.
@@ -634,6 +691,43 @@ export interface components {
             screenshots?: components["schemas"]["MediaRef"][];
             /** Tracks */
             tracks?: components["schemas"]["Track"][];
+        };
+        /** DomainOut */
+        DomainOut: {
+            /** Activated At */
+            activated_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Host */
+            host: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Last Checked At */
+            last_checked_at: string | null;
+            /** Next Check At */
+            next_check_at: string | null;
+            /** Problems */
+            problems: components["schemas"]["ProblemOut"][];
+            /** Records */
+            records: components["schemas"]["RecordOut"][];
+            /**
+             * Site Id
+             * Format: uuid
+             */
+            site_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "verified" | "active" | "failed" | "lost";
+            /** Verified At */
+            verified_at: string | null;
         };
         /** EmailIn */
         EmailIn: {
@@ -858,6 +952,15 @@ export interface components {
             /** Title Id */
             title_id: string | null;
         };
+        /** ProblemOut */
+        ProblemOut: {
+            /** Code */
+            code: string;
+            /** Details */
+            details: {
+                [key: string]: unknown;
+            };
+        };
         /**
          * PublicCatalogOut
          * @description Same shapes as the cabinet, without limits.
@@ -912,6 +1015,21 @@ export interface components {
              */
             status: "ok" | "fail";
         };
+        /**
+         * RecordOut
+         * @description A DNS record the owner has to create at their registrar.
+         */
+        RecordOut: {
+            /** Name */
+            name: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "TXT" | "A" | "AAAA" | "CNAME";
+            /** Value */
+            value: string;
+        };
         /** Related */
         Related: {
             /**
@@ -950,10 +1068,27 @@ export interface components {
              */
             status: "published" | "suspended";
         };
+        /** ServerOut */
+        ServerOut: {
+            /** Ipv4 */
+            ipv4: string[];
+            /** Ipv6 */
+            ipv6: string[];
+        };
         /** SetBlocksIn */
         SetBlocksIn: {
             /** Blocks */
             blocks: components["schemas"]["BlockIn"][];
+        };
+        /** SiteDomainsOut */
+        SiteDomainsOut: {
+            /** Domains */
+            domains: components["schemas"]["DomainOut"][];
+            /** Max Domains */
+            max_domains: number;
+            server: components["schemas"]["ServerOut"];
+            /** Used */
+            used: number;
         };
         /** SiteOut */
         SiteOut: {
@@ -1672,6 +1807,66 @@ export interface operations {
             };
         };
     };
+    remove_domain_api_domains__domain_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                domain_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_domain_api_domains__domain_id__check_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                domain_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DomainOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     health_api_health_get: {
         parameters: {
             query?: never;
@@ -1982,6 +2177,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SiteOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_domains_api_sites__site_id__domains_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteDomainsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_domain_api_sites__site_id__domains_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddDomainIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DomainOut"];
                 };
             };
             /** @description Validation Error */

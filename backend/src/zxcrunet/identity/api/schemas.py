@@ -50,6 +50,7 @@ class LimitsOut(BaseModel):
     max_sites: int
     max_custom_domains: int
     max_upload_mb: int
+    max_video_mb: int
 
     @classmethod
     def of(cls, plan: Plan) -> "LimitsOut":
@@ -59,6 +60,7 @@ class LimitsOut(BaseModel):
             max_sites=plan.max_sites,
             max_custom_domains=plan.max_custom_domains,
             max_upload_mb=plan.max_upload_mb,
+            max_video_mb=plan.max_video_mb,
         )
 
 

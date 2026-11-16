@@ -152,6 +152,24 @@ export function AppearanceEditor({
           <RangeField label={t.dim} value={a.dim} max={90} onChange={(dim) => set({ dim })} />
         </>
       )}
+      {a.background === "video" && (
+        <>
+          <MediaField
+            label={t.video}
+            purpose="video"
+            hint={t.videoHint}
+            value={a.video}
+            onChange={(video) => set({ video: video as Appearance["video"] })}
+          />
+          <MediaField
+            label={t.image}
+            purpose="image"
+            value={a.image}
+            onChange={(image) => set({ image })}
+          />
+          <RangeField label={t.dim} value={a.dim} max={90} onChange={(dim) => set({ dim })} />
+        </>
+      )}
       {a.background === "pattern" && (
         <PatternField
           label={t.pattern}

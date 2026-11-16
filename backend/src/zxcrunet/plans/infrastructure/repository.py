@@ -12,6 +12,7 @@ def _to_domain(row: PlanModel) -> Plan:
         max_sites=row.max_sites,
         max_custom_domains=row.max_custom_domains,
         max_upload_mb=row.max_upload_mb,
+        max_video_mb=row.max_video_mb,
     )
 
 
@@ -20,6 +21,7 @@ def _apply(row: PlanModel, plan: Plan) -> None:
     row.max_sites = plan.max_sites
     row.max_custom_domains = plan.max_custom_domains
     row.max_upload_mb = plan.max_upload_mb
+    row.max_video_mb = plan.max_video_mb
 
 
 class SqlPlanRepository:

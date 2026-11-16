@@ -20,12 +20,14 @@ from zxcrunet.shared.application.content import (
     ContentModel as _Model,
 )
 from zxcrunet.shared.application.content import (
+    Embed,
     Line,
     Link,
     MediaRef,
     Short,
     Text,
     Url,
+    VideoRef,
     safe_url,
 )
 from zxcrunet.shared.application.content import (
@@ -66,7 +68,9 @@ BodyFontId = Literal[
 Hex = Annotated[
     str, StringConstraints(strip_whitespace=True, to_lower=True, pattern=r"^#[0-9a-fA-F]{6}$")
 ]
-SectionBackground = Literal["none", "surface", "accent", "color", "gradient", "image", "pattern"]
+SectionBackground = Literal[
+    "none", "surface", "accent", "color", "gradient", "image", "video", "pattern"
+]  # fmt: skip
 SectionSpace = Literal["none", "s", "m", "l"]
 SectionDivider = Literal["none", "line", "ornament"]
 
@@ -80,7 +84,9 @@ class Appearance(_Model):
     color2: Hex = "#05070b"
     angle: int = Field(default=180, ge=0, le=360)
     image: MediaRef | None = None
-    #: Darkening over the image, in percent, so the text stays readable.
+    #: `video`: a short muted loop behind the content (`image` is its poster).
+    video: VideoRef | None = None
+    #: Darkening over the image or video, in percent, so the text stays readable.
     dim: int = Field(default=45, ge=0, le=90)
     pattern: Pattern = "dots"
     space: SectionSpace = "none"
@@ -290,6 +296,48 @@ class PostsSettings(_Model):
     limit: int = Field(default=6, ge=1, le=24)
 
 
+# --- media blocks (any site) -------------------------------------------------
+
+Aspect = Literal["16:9", "9:16", "4:3", "1:1", "21:9"]
+
+
+class VideoSettings(_Model):
+    label: Short = ""
+    title: Line = ""
+    lead: Text = ""
+    #: `embed`: YouTube, VK Video or Rutube; `file`: an uploaded clip.
+    source: Literal["embed", "file"] = "embed"
+    embed: Embed | None = None
+    file: VideoRef | None = None
+    poster: MediaRef | None = None
+    #: For files: a player with controls, or a silent endless loop.
+    mode: Literal["player", "loop"] = "player"
+    aspect: Aspect = "16:9"
+
+
+class CarouselItem(_Model):
+    media: MediaRef
+    #: Read by screen readers; never shown under the picture.
+    alt: Short = ""
+    link: Link | None = None
+
+
+class CarouselSettings(_Model):
+    label: Short = ""
+    title: Line = ""
+    items: list[CarouselItem] = Field(default_factory=list, max_length=30)
+    #: `slides`: one frame after another; `marquee`: a strip that runs without stopping.
+    mode: Literal["slides", "marquee"] = "slides"
+    autoplay: bool = True
+    #: Seconds per slide.
+    interval: int = Field(default=5, ge=2, le=15)
+    #: Seconds per lap of the strip.
+    speed: int = Field(default=40, ge=10, le=120)
+    direction: Literal["left", "right"] = "left"
+    height: Literal["s", "m", "l"] = "m"
+    pause_on_hover: bool = True
+
+
 SCHEMAS: dict[str, dict[int, type[_Model]]] = {
     "hero": {1: HeroSettings},
     "facts": {1: FactsSettings},
@@ -308,6 +356,8 @@ SCHEMAS: dict[str, dict[int, type[_Model]]] = {
     "quotes": {1: QuotesSettings},
     "playlist": {1: PlaylistSettings},
     "posts": {1: PostsSettings},
+    "video": {1: VideoSettings},
+    "carousel": {1: CarouselSettings},
 }
 
 BlockType = Literal[
@@ -328,6 +378,8 @@ BlockType = Literal[
     "quotes",
     "playlist",
     "posts",
+    "video",
+    "carousel",
 ]
 
 
@@ -351,7 +403,7 @@ def _errors(exc: ValidationError) -> list[dict[str, Any]]:
     ]
 
 
-COMMON_BLOCKS = frozenset({"hero", "interests", "contacts"})
+COMMON_BLOCKS = frozenset({"hero", "interests", "contacts", "video", "carousel"})
 PERSONAL_ONLY = frozenset(
     {"profile", "now", "shelf", "characters", "top", "challenge", "quotes", "playlist", "posts"}
 )

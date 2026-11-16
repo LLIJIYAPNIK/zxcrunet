@@ -10,6 +10,8 @@ TITLE_MAX = 64
 #: Sanity bounds for limits set in the admin panel.
 MAX_COUNT_LIMIT = 1000
 MAX_UPLOAD_MB = 100
+#: Short looping clips and short films are bigger than pictures: a separate limit.
+DEFAULT_VIDEO_MB = 15
 
 LimitName = Literal["max_sites", "max_custom_domains"]
 
@@ -29,10 +31,17 @@ class Plan:
     max_sites: int
     max_custom_domains: int
     max_upload_mb: int
+    max_video_mb: int = DEFAULT_VIDEO_MB
 
     @classmethod
     def create(
-        cls, code: str, title: str, max_sites: int, max_custom_domains: int, max_upload_mb: int
+        cls,
+        code: str,
+        title: str,
+        max_sites: int,
+        max_custom_domains: int,
+        max_upload_mb: int,
+        max_video_mb: int = DEFAULT_VIDEO_MB,
     ) -> "Plan":
         """A validated plan: the admin panel creates and edits plans through this."""
         clean_code = code.strip().lower()
@@ -45,12 +54,15 @@ class Plan:
             ("max_sites", max_sites, 0, MAX_COUNT_LIMIT),
             ("max_custom_domains", max_custom_domains, 0, MAX_COUNT_LIMIT),
             ("max_upload_mb", max_upload_mb, 1, MAX_UPLOAD_MB),
+            ("max_video_mb", max_video_mb, 1, MAX_UPLOAD_MB),
         ):
             if not low <= value <= high:
                 raise InvalidPlanError(
                     "Limit is out of range", {"field": name, "min": low, "max": high}
                 )
-        return cls(clean_code, clean_title, max_sites, max_custom_domains, max_upload_mb)
+        return cls(
+            clean_code, clean_title, max_sites, max_custom_domains, max_upload_mb, max_video_mb
+        )
 
     def ensure_can_add(self, limit: LimitName, current: int) -> None:
         """Raise when adding one more item would exceed the plan's limit."""

@@ -8,6 +8,7 @@ import { ru } from "@/i18n/ru";
 import { favoriteCharacters, initials } from "@/lib/catalog/catalog";
 
 import { useCatalog } from "./catalog-context";
+import { CarouselEditor, VideoEditor } from "./media-editors";
 
 import {
   ChipsField,
@@ -783,4 +784,6 @@ export const EDITORS: { [T in AnyBlock["type"]]: (props: EditorProps<T>) => Reac
   quotes: QuotesEditor,
   playlist: PlaylistEditor,
   posts: PostsEditor,
+  video: VideoEditor,
+  carousel: CarouselEditor,
 };

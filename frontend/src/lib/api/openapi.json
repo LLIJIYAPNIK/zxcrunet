@@ -433,6 +433,7 @@
               "color",
               "gradient",
               "image",
+              "video",
               "pattern"
             ],
             "title": "Background",
@@ -576,6 +577,16 @@
             ],
             "title": "Space",
             "type": "string"
+          },
+          "video": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VideoRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "title": "Appearance",
@@ -708,7 +719,9 @@
               "challenge",
               "quotes",
               "playlist",
-              "posts"
+              "posts",
+              "video",
+              "carousel"
             ],
             "title": "Type",
             "type": "string"
@@ -818,7 +831,8 @@
           "purpose": {
             "enum": [
               "image",
-              "resume"
+              "resume",
+              "video"
             ],
             "title": "Purpose",
             "type": "string"
@@ -996,6 +1010,13 @@
             "maximum": 100.0,
             "minimum": 1.0,
             "title": "Max Upload Mb",
+            "type": "integer"
+          },
+          "max_video_mb": {
+            "default": 15,
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Max Video Mb",
             "type": "integer"
           },
           "title": {
@@ -1730,6 +1751,10 @@
             "title": "Max Upload Mb",
             "type": "integer"
           },
+          "max_video_mb": {
+            "title": "Max Video Mb",
+            "type": "integer"
+          },
           "plan": {
             "title": "Plan",
             "type": "string"
@@ -1744,7 +1769,8 @@
           "plan_title",
           "max_sites",
           "max_custom_domains",
-          "max_upload_mb"
+          "max_upload_mb",
+          "max_video_mb"
         ],
         "title": "LimitsOut",
         "type": "object"
@@ -1786,7 +1812,8 @@
           "kind": {
             "enum": [
               "image",
-              "document"
+              "document",
+              "video"
             ],
             "title": "Kind",
             "type": "string"
@@ -1933,6 +1960,13 @@
             "title": "Max Upload Mb",
             "type": "integer"
           },
+          "max_video_mb": {
+            "default": 15,
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Max Video Mb",
+            "type": "integer"
+          },
           "title": {
             "maxLength": 64,
             "title": "Title",
@@ -1966,6 +2000,10 @@
             "title": "Max Upload Mb",
             "type": "integer"
           },
+          "max_video_mb": {
+            "title": "Max Video Mb",
+            "type": "integer"
+          },
           "title": {
             "title": "Title",
             "type": "string"
@@ -1976,7 +2014,8 @@
           "title",
           "max_sites",
           "max_custom_domains",
-          "max_upload_mb"
+          "max_upload_mb",
+          "max_video_mb"
         ],
         "title": "PlanOut",
         "type": "object"
@@ -3738,6 +3777,51 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "VideoRef": {
+        "additionalProperties": false,
+        "description": "An uploaded clip (MP4 or WebM).",
+        "properties": {
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "url": {
+            "maxLength": 200,
+            "pattern": "^/media/[A-Za-z0-9/_.-]+\\.(mp4|webm)$",
+            "title": "Url",
+            "type": "string"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
+          }
+        },
+        "required": [
+          "id",
+          "url"
+        ],
+        "title": "VideoRef",
         "type": "object"
       },
       "ViewIn": {

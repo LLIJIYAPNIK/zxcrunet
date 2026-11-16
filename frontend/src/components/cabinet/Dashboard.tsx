@@ -65,6 +65,7 @@ export async function Dashboard({ searchParams }: { searchParams: Promise<{ slug
                 [limits.max_sites, t.limitSites],
                 [limits.max_custom_domains, t.limitDomains],
                 [limits.max_upload_mb, t.limitUpload],
+                [limits.max_video_mb, t.limitVideo],
               ].map(([value, label]) => (
                 <div key={label} className="border-b border-line py-3 last:border-0">
                   <dt className="sr-only">{label}</dt>

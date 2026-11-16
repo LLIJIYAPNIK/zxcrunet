@@ -8,6 +8,7 @@ from zxcrunet.media.application.use_cases import (
     ImageProcessor,
     MediaService,
     UploadMedia,
+    VideoCleaner,
 )
 from zxcrunet.media.domain.media import MediaRepository
 from zxcrunet.media.infrastructure.adapters import (
@@ -15,6 +16,7 @@ from zxcrunet.media.infrastructure.adapters import (
     PillowImageProcessor,
     SqlMediaRepository,
 )
+from zxcrunet.media.infrastructure.video import TagStrippingVideoCleaner
 from zxcrunet.shared.config import Settings
 
 
@@ -26,6 +28,10 @@ class MediaProvider(Provider):
     @provide(scope=Scope.APP)
     def images(self) -> ImageProcessor:
         return PillowImageProcessor()
+
+    @provide(scope=Scope.APP)
+    def videos(self) -> VideoCleaner:
+        return TagStrippingVideoCleaner()
 
     @provide(scope=Scope.REQUEST)
     def repository(self, session: AsyncSession) -> MediaRepository:

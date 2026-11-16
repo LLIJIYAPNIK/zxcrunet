@@ -184,3 +184,74 @@ test("gothic style, fonts and a section background reach the public card", async
   await expect(page.locator('[data-pattern="arches"]')).toHaveCount(1);
   await page.screenshot({ path: `${SHOTS}/public-gothic-1440.png`, fullPage: true });
 });
+
+/** The smallest MP4 the server accepts (an `ftyp` box with a browser brand). */
+const MP4 = Buffer.concat([
+  Buffer.from([0, 0, 0, 24]),
+  Buffer.from("ftypisom"),
+  Buffer.from([0, 0, 0, 0]),
+  Buffer.from("isomavc1"),
+  Buffer.from([0, 0, 0, 16]),
+  Buffer.from("mdat"),
+  Buffer.alloc(8),
+]);
+
+test("video by link, own clip and a carousel reach the public card", async ({ page }) => {
+  await registerVerified(page, "media");
+  const slug = `m-${Date.now().toString(36)}`;
+  await page.goto(`${APP}/app/sites/new`);
+  await page.getByLabel("Название").filter({ visible: true }).fill("Медиа");
+  await page.getByLabel("Адрес").filter({ visible: true }).fill(slug);
+  await expect(page.getByText("Адрес свободен")).toBeVisible();
+  await page.getByRole("button", { name: "Создать", exact: true }).click();
+  await page.getByRole("link", { name: "Конструктор" }).click();
+
+  // A YouTube link: only the id is kept, the player comes from youtube-nocookie.
+  await addBlock(page, "Видео");
+  await field(page, "Видео", "Заголовок").fill("Мой доклад");
+  await field(page, "Видео", "Ссылка на видео").fill("https://youtu.be/dQw4w9WgXcQ?si=share");
+  await expect(page.getByText("YouTube: видео найдено")).toBeVisible();
+  await saved(page);
+
+  // An uploaded clip as a silent loop.
+  await addBlock(page, "Видео");
+  const clip = page.getByRole("region", { name: "Видео", exact: true });
+  await clip.getByRole("button", { name: "Свой файл" }).click();
+  await clip.locator('input[type="file"]').first().setInputFiles({
+    name: "loop.mp4",
+    mimeType: "video/mp4",
+    buffer: MP4,
+  });
+  await expect(clip.locator('video[src$=".mp4"]')).toBeVisible();
+  await clip.getByRole("button", { name: "Беззвучная петля" }).click();
+  await saved(page);
+
+  // A carousel of two pictures running as a strip.
+  await addBlock(page, "Карусель");
+  const strip = page.getByRole("region", { name: "Карусель", exact: true });
+  await strip.getByRole("button", { name: "Бегущая лента" }).click();
+  for (const name of ["a.png", "b.png"]) {
+    await strip.getByRole("button", { name: "Добавить", exact: true }).click();
+    await strip
+      .locator('input[type="file"]')
+      .last()
+      .setInputFiles({ name, mimeType: "image/png", buffer: PNG });
+    await expect(strip.locator('img[src^="/media/"]')).toHaveCount(name === "a.png" ? 1 : 2);
+  }
+  await saved(page);
+
+  await page.getByRole("button", { name: "Опубликовать", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "опубликовано" })).toBeVisible();
+
+  const response = await page.goto(`http://${slug}.localhost:${PORT}`);
+  expect(response?.headers()["content-security-policy"]).toContain(
+    "frame-src https://www.youtube-nocookie.com",
+  );
+  await expect(page.getByTitle("Мой доклад")).toHaveAttribute(
+    "src",
+    "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?rel=0",
+  );
+  await expect(page.locator('video[loop][src$=".mp4"]')).toHaveCount(1);
+  await expect(page.locator("[data-marquee] .marquee-track > div")).toHaveCount(2);
+  await page.screenshot({ path: `${SHOTS}/public-media-1440.png`, fullPage: true });
+});

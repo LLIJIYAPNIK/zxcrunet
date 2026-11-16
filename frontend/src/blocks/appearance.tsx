@@ -4,6 +4,7 @@
  */
 import type { CSSProperties, ReactNode } from "react";
 
+import { LoopVideo } from "@/components/public/LoopVideo";
 import { Pattern } from "@/components/public/Pattern";
 import { cn } from "@/lib/cn";
 import { contrast, hexToRgb, rgbToHex } from "@/lib/theme/color";
@@ -125,6 +126,20 @@ export function SectionFrame({
       style={style}
     >
       {a.background === "pattern" && <Pattern pattern={a.pattern} fade="full" className="-z-10" />}
+      {a.background === "video" && a.video && (
+        <span aria-hidden="true" className="absolute inset-0 -z-10 overflow-hidden">
+          <LoopVideo
+            src={a.video.url}
+            poster={a.image?.url}
+            className="absolute inset-0 size-full"
+          />
+          <span
+            data-shade=""
+            className="absolute inset-0"
+            style={{ background: `rgba(0, 0, 0, ${a.dim / 100})` }}
+          />
+        </span>
+      )}
       {a.divider === "ornament" && <Ornament className="pt-8 @3xl:pt-12" />}
       {children}
     </div>

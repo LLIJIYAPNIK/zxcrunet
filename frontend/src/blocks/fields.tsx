@@ -16,7 +16,7 @@ import { PATTERNS, type PatternId } from "@/lib/theme/patterns";
 import { ru } from "@/i18n/ru";
 
 import { useCatalog } from "./catalog-context";
-import type { Link, MediaRef } from "./schemas";
+import { isVideo, type Link, type MediaRef } from "./schemas";
 
 const f = ru.builder.fields;
 
@@ -292,17 +292,31 @@ export function ListField<T>({
 
 type UploadResult = { id: string; url: string; width: number | null; height: number | null };
 
-/** Uploads to `/api/media` (multipart); the server re-encodes images to WebP. */
+const IMAGE_TYPES = "image/jpeg,image/png,image/webp,image/gif";
+const VIDEO_TYPES = "video/mp4,video/webm";
+const ACCEPT = {
+  image: IMAGE_TYPES,
+  resume: "application/pdf",
+  video: VIDEO_TYPES,
+  visual: `${IMAGE_TYPES},${VIDEO_TYPES}`,
+} as const;
+
+/**
+ * Uploads to `/api/media` (multipart); the server re-encodes images to WebP and strips
+ * tags from videos. `visual` takes a picture or a clip and sends it as either.
+ */
 export function MediaField({
   label,
   purpose,
   value,
   onChange,
+  hint,
 }: {
   label: string;
-  purpose: "image" | "resume";
+  purpose: "image" | "resume" | "video" | "visual";
   value: MediaRef | null;
   onChange: (value: MediaRef | null) => void;
+  hint?: string;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -313,7 +327,9 @@ export function MediaField({
     setError(null);
     const form = new FormData();
     form.append("file", file);
-    form.append("purpose", purpose);
+    const sent =
+      purpose === "visual" ? (file.type.startsWith("video/") ? "video" : "image") : purpose;
+    form.append("purpose", sent);
     try {
       const response = await fetch("/api/media", {
         method: "POST",
@@ -340,7 +356,16 @@ export function MediaField({
       <span className="text-sm font-medium text-ink-2">{label}</span>
       <div className="flex items-center gap-3">
         {value &&
-          (purpose === "image" ? (
+          (isVideo(value) ? (
+            <video
+              src={value.url}
+              muted
+              playsInline
+              preload="metadata"
+              aria-hidden="true"
+              className="size-14 rounded-md border border-line-2 bg-black object-cover"
+            />
+          ) : purpose !== "resume" ? (
             <Image
               src={value.url}
               alt=""
@@ -363,9 +388,7 @@ export function MediaField({
           ref={input}
           type="file"
           hidden
-          accept={
-            purpose === "image" ? "image/jpeg,image/png,image/webp,image/gif" : "application/pdf"
-          }
+          accept={ACCEPT[purpose]}
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) void upload(file);
@@ -389,6 +412,7 @@ export function MediaField({
           </button>
         )}
       </div>
+      {hint && <p className="text-sm text-muted">{hint}</p>}
       {error && (
         <span role="alert" className="text-[13px] text-[#ff6b6b]">
           {error}

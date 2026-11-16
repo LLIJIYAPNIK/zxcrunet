@@ -10,7 +10,7 @@ from zxcrunet.plans.application.admin import (
     PlanFields,
     UpdatePlan,
 )
-from zxcrunet.plans.domain.plan import InvalidPlanError, Plan
+from zxcrunet.plans.domain.plan import DEFAULT_VIDEO_MB, InvalidPlanError, Plan
 from zxcrunet.shared.application.admin import Staff
 from zxcrunet.shared.domain.errors import NotFoundError
 
@@ -46,6 +46,14 @@ class TestPlanCreate:
         with pytest.raises(InvalidPlanError) as error:
             Plan.create(code, title, sites, domains, upload)
         assert error.value.details["field"] == field
+
+    def test_video_limit_is_separate_and_bounded(self) -> None:
+        assert Plan.create("pro", "Про", 1, 1, 10).max_video_mb == DEFAULT_VIDEO_MB
+        assert Plan.create("pro", "Про", 1, 1, 10, 40).max_video_mb == 40
+        for bad in (0, 101):
+            with pytest.raises(InvalidPlanError) as error:
+                Plan.create("pro", "Про", 1, 1, 10, bad)
+            assert error.value.details["field"] == "max_video_mb"
 
 
 class TestAdmin:

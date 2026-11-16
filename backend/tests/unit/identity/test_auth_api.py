@@ -63,6 +63,7 @@ async def test_me_returns_user_and_plan_limits(client: AsyncClient) -> None:
         "max_sites": 3,
         "max_custom_domains": 3,
         "max_upload_mb": 10,
+        "max_video_mb": 15,
     }
 
 

@@ -255,3 +255,61 @@ test("video by link, own clip and a carousel reach the public card", async ({ pa
   await expect(page.locator("[data-marquee] .marquee-track > div")).toHaveCount(2);
   await page.screenshot({ path: `${SHOTS}/public-media-1440.png`, fullPage: true });
 });
+
+test("a collage and a fullscreen hero reach the public card", async ({ page }) => {
+  await registerVerified(page, "collage");
+  const slug = `c-${Date.now().toString(36)}`;
+  await page.goto(`${APP}/app/sites/new`);
+  await page.getByLabel("Название").filter({ visible: true }).fill("Коллаж");
+  await page.getByLabel("Адрес").filter({ visible: true }).fill(slug);
+  await expect(page.getByText("Адрес свободен")).toBeVisible();
+  await page.getByRole("button", { name: "Создать", exact: true }).click();
+  await page.getByRole("link", { name: "Конструктор" }).click();
+
+  // Hero over a full-screen picture.
+  await addBlock(page, "Шапка");
+  const hero = page.getByRole("region", { name: "Шапка", exact: true });
+  await field(page, "Шапка", "Заголовок").fill("Тень и пламя");
+  await hero.getByRole("button", { name: "Во весь экран" }).click();
+  await hero.locator('input[type="file"]').first().setInputFiles({
+    name: "night.png",
+    mimeType: "image/png",
+    buffer: PNG,
+  });
+  await expect(hero.locator('img[src^="/media/"]')).toBeVisible();
+  await saved(page);
+
+  // Collage: a heading tile and a picture, moved one column right from the keyboard.
+  await addBlock(page, "Коллаж");
+  const collage = page.getByRole("region", { name: "Коллаж", exact: true });
+  await collage.getByRole("button", { name: "Текст", exact: true }).click();
+  await field(page, "Коллаж", "Текст").fill("Ночные работы");
+  await collage.getByRole("button", { name: "Картинка", exact: true }).click();
+  await collage.locator('input[type="file"]').last().setInputFiles({
+    name: "moon.png",
+    mimeType: "image/png",
+    buffer: PNG,
+  });
+  await expect(
+    collage.getByTestId("collage-canvas").locator("[data-tile-id] span[style]"),
+  ).toHaveCount(1);
+  const picture = collage.getByRole("button", { name: /^Картинка: колонка 1, ряд 3/ });
+  await picture.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(collage.getByRole("button", { name: /^Картинка: колонка 2, ряд 3/ })).toBeVisible();
+  await saved(page);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.screenshot({ path: `${SHOTS}/builder-collage-1440.png`, fullPage: true });
+
+  await page.getByRole("button", { name: "Опубликовать", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "опубликовано" })).toBeVisible();
+
+  await page.goto(`http://${slug}.localhost:${PORT}`);
+  await expect(page.locator('[data-hero="fullscreen"] img[src^="/media/"]')).toHaveCount(1);
+  await expect(page.locator("[data-collage] [data-tile]")).toHaveCount(2);
+  await expect(page.getByText("Ночные работы")).toBeVisible();
+  await expect(page.locator('[data-tile="image"]')).toHaveAttribute("style", /--dx: ?2/);
+  await page.screenshot({ path: `${SHOTS}/public-collage-1440.png`, fullPage: true });
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.screenshot({ path: `${SHOTS}/public-collage-390.png`, fullPage: true });
+});

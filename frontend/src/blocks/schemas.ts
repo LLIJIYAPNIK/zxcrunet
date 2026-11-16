@@ -45,6 +45,11 @@ export const heroSchema = z.object({
   avatar: mediaRefSchema.nullable().default(null),
   chips: z.array(short).max(6).default([]),
   pattern: z.enum(PATTERNS).default("rings"),
+  layout: z.enum(["card", "collage", "fullscreen"]).default("card"),
+  media: z.array(mediaRefSchema).max(6).default([]),
+  background: mediaRefSchema.nullable().default(null),
+  dim: z.number().int().min(0).max(90).default(45),
+  align: z.enum(["left", "center"]).default("left"),
 });
 
 export const factsSchema = z.object({
@@ -286,6 +291,68 @@ export const videoSchema = z.object({
   aspect: z.enum(ASPECTS).default("16:9"),
 });
 
+// --- collage: tiles on a 12-column grid (4 on phones), mirror of backend ------
+
+export const DESKTOP_COLUMNS = 12;
+export const PHONE_COLUMNS = 4;
+export const MAX_ROW = 60;
+export const MAX_SPAN_ROWS = 24;
+
+const placeSchema = z.object({
+  x: z
+    .number()
+    .int()
+    .min(0)
+    .max(DESKTOP_COLUMNS - 1),
+  y: z
+    .number()
+    .int()
+    .min(0)
+    .max(MAX_ROW - 1),
+  w: z.number().int().min(1).max(DESKTOP_COLUMNS),
+  h: z.number().int().min(1).max(MAX_SPAN_ROWS),
+});
+export type Place = z.infer<typeof placeSchema>;
+
+export const TILE_KINDS = ["image", "video", "embed", "text", "button"] as const;
+export type TileKind = (typeof TILE_KINDS)[number];
+
+export const tileSchema = z
+  .object({
+    id: z.string().regex(/^[a-z0-9]{1,16}$/),
+    kind: z.enum(TILE_KINDS),
+    media: mediaRefSchema.nullable().default(null),
+    embed: embedSchema.nullable().default(null),
+    text: text.default(""),
+    text_style: z.enum(["heading", "body", "quote", "label"]).default("body"),
+    align: z.enum(["left", "center", "right"]).default("left"),
+    link: linkSchema.nullable().default(null),
+    fill: z.enum(["none", "surface", "accent"]).default("none"),
+    fit: z.enum(["cover", "contain"]).default("cover"),
+    rounded: z.boolean().default(true),
+    alt: short.default(""),
+    desktop: placeSchema,
+    phone: placeSchema.nullable().default(null),
+    layer: z.number().int().min(0).max(10).default(1),
+  })
+  .refine((t) => t.desktop.x + t.desktop.w <= DESKTOP_COLUMNS, "Плитка шире сетки")
+  .refine((t) => !t.phone || t.phone.x + t.phone.w <= PHONE_COLUMNS, "Плитка шире сетки телефона");
+export type Tile = z.infer<typeof tileSchema>;
+
+export const collageSchema = z.object({
+  label: short.default(""),
+  title: line.default(""),
+  tiles: z
+    .array(tileSchema)
+    .max(24)
+    .default([])
+    .refine((tiles) => new Set(tiles.map((t) => t.id)).size === tiles.length, "Повтор плитки"),
+  cell: z.enum(["s", "m", "l"]).default("m"),
+  gap: z.enum(["none", "s", "m"]).default("s"),
+  phone: z.enum(["auto", "custom"]).default("auto"),
+  bleed: z.boolean().default(false),
+});
+
 export const carouselSchema = z.object({
   label: short.default(""),
   title: line.default(""),
@@ -366,6 +433,7 @@ export const SCHEMAS = {
   posts: postsSchema,
   video: videoSchema,
   carousel: carouselSchema,
+  collage: collageSchema,
 } as const;
 
 export type BlockType = keyof typeof SCHEMAS;
@@ -574,6 +642,16 @@ export const META: { [T in BlockType]: BlockMeta & { type: T } } = {
           : "файл не загружен",
     navLabel: (s: SettingsOf<"video">) => s.title || null,
   },
+  collage: {
+    type: "collage",
+    title: "Коллаж",
+    description: "Свободная сетка: картинки, клипы, видео, текст и кнопки где угодно, слоями.",
+    icon: "grid",
+    kinds: ["business", "personal"],
+    summary: (s: SettingsOf<"collage">) =>
+      s.tiles.length ? `${s.tiles.length} плиток` : "пустая сетка",
+    navLabel: (s: SettingsOf<"collage">) => s.title || null,
+  },
   carousel: {
     type: "carousel",
     title: "Карусель",
@@ -671,6 +749,7 @@ export function defaultSettings<T extends BlockType>(type: T, siteTitle: string)
     posts: postsSchema.parse({ label: "Лента", title: "Посты" }),
     video: videoSchema.parse({}),
     carousel: carouselSchema.parse({}),
+    collage: collageSchema.parse({}),
   };
   return defaults[type] as SettingsOf<T>;
 }

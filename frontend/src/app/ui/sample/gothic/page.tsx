@@ -10,18 +10,18 @@ export const metadata: Metadata = {
 
 const blocks = SAMPLE_GOTHIC_BLOCKS as unknown as Record<string, unknown>[];
 
-/** The business sample in the gothic style: a visual check of styles, fonts and sections. */
+/** A gothic card: fullscreen hero, collage, running strip, section backgrounds and fonts. */
 export default function GothicSamplePage() {
   return (
     <PublicSite
-      slug="anna"
-      page={{ path: "", title: "Анна Волкова", blocks }}
+      slug="mira"
+      page={{ path: "", title: "Мира Чернова", blocks }}
       content={{
         kind: "business",
-        title: "Анна Волкова",
+        title: "Мира Чернова",
         theme: SAMPLE_GOTHIC_THEME,
         seo: { title: "", description: "" },
-        pages: [{ path: "", title: "Анна Волкова", blocks }],
+        pages: [{ path: "", title: "Мира Чернова", blocks }],
       }}
     />
   );

@@ -721,7 +721,8 @@
               "playlist",
               "posts",
               "video",
-              "carousel"
+              "carousel",
+              "collage"
             ],
             "title": "Type",
             "type": "string"

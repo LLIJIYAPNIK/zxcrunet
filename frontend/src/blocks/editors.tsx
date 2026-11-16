@@ -3,8 +3,9 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
 
+import { CollageEditor } from "@/components/builder/CollageEditor";
+import { Segmented } from "@/components/ui/Segmented";
 import { ru } from "@/i18n/ru";
-
 import { favoriteCharacters, initials } from "@/lib/catalog/catalog";
 
 import { useCatalog } from "./catalog-context";
@@ -36,6 +37,7 @@ import {
 } from "./schemas";
 
 const f = ru.builder.fields;
+const h = ru.builder.hero;
 
 type EditorProps<T extends AnyBlock["type"]> = {
   value: SettingsOf<T>;
@@ -65,30 +67,102 @@ function HeroEditor({ value: v, onChange }: EditorProps<"hero">) {
         value={v.secondary}
         onChange={(secondary) => set({ secondary })}
       />
-      <MediaField
-        label={f.avatar}
-        purpose="image"
-        value={v.avatar}
-        onChange={(avatar) => set({ avatar })}
+      <Segmented
+        label={h.layout}
+        value={v.layout}
+        onChange={(layout) => set({ layout })}
+        options={(["card", "collage", "fullscreen"] as const).map((l) => ({
+          value: l,
+          label: h.layouts[l],
+        }))}
       />
-      <TextField
-        label={f.cardName}
-        value={v.card_name}
-        max={80}
-        onChange={(card_name) => set({ card_name })}
-      />
-      <TextField
-        label={f.cardRole}
-        value={v.card_role}
-        max={80}
-        onChange={(card_role) => set({ card_role })}
-      />
-      <ChipsField label={f.chips} value={v.chips} max={6} onChange={(chips) => set({ chips })} />
-      <PatternField
-        label={f.cardPattern}
-        value={v.pattern}
-        onChange={(pattern) => set({ pattern })}
-      />
+      {v.layout === "card" && (
+        <>
+          <MediaField
+            label={f.avatar}
+            purpose="image"
+            value={v.avatar}
+            onChange={(avatar) => set({ avatar })}
+          />
+          <TextField
+            label={f.cardName}
+            value={v.card_name}
+            max={80}
+            onChange={(card_name) => set({ card_name })}
+          />
+          <TextField
+            label={f.cardRole}
+            value={v.card_role}
+            max={80}
+            onChange={(card_role) => set({ card_role })}
+          />
+          <ChipsField
+            label={f.chips}
+            value={v.chips}
+            max={6}
+            onChange={(chips) => set({ chips })}
+          />
+          <PatternField
+            label={f.cardPattern}
+            value={v.pattern}
+            onChange={(pattern) => set({ pattern })}
+          />
+        </>
+      )}
+      {v.layout === "collage" && (
+        <div className="flex flex-col gap-3">
+          <span className="text-sm font-medium text-ink-2">{h.media}</span>
+          {v.media.map((item, i) => (
+            <MediaField
+              key={item.id}
+              label={`${i + 1}`}
+              purpose="visual"
+              value={item}
+              onChange={(next) =>
+                set({
+                  media: next
+                    ? v.media.map((m, j) => (j === i ? next : m))
+                    : v.media.filter((_, j) => j !== i),
+                })
+              }
+            />
+          ))}
+          {v.media.length < 6 && (
+            <MediaField
+              key={`new-${v.media.length}`}
+              label={`${v.media.length + 1}`}
+              purpose="visual"
+              value={null}
+              onChange={(next) => next && set({ media: [...v.media, next] })}
+            />
+          )}
+          <p className="text-sm text-muted">{h.mediaHint}</p>
+        </div>
+      )}
+      {v.layout === "fullscreen" && (
+        <>
+          <MediaField
+            label={h.background}
+            purpose="visual"
+            value={v.background}
+            onChange={(background) => set({ background })}
+          />
+          <RangeField
+            label={h.dim}
+            value={v.dim}
+            onChange={(dim) => set({ dim: Math.min(90, dim) })}
+          />
+          <Segmented
+            label={h.align}
+            value={v.align}
+            onChange={(align) => set({ align })}
+            options={(["left", "center"] as const).map((a) => ({
+              value: a,
+              label: h.aligns[a],
+            }))}
+          />
+        </>
+      )}
     </Stack>
   );
 }
@@ -786,4 +860,5 @@ export const EDITORS: { [T in AnyBlock["type"]]: (props: EditorProps<T>) => Reac
   posts: PostsEditor,
   video: VideoEditor,
   carousel: CarouselEditor,
+  collage: CollageEditor,
 };

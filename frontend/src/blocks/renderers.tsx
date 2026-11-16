@@ -2,8 +2,10 @@
  * Block renders: pure components (no hooks), used by the public site (server) and by the
  * editor preview (client). Layout follows the nearest `@container`, not the viewport.
  */
+import Image from "next/image";
 import type { ReactNode } from "react";
 
+import { LoopVideo } from "@/components/public/LoopVideo";
 import { ProfileCard } from "@/components/public/ProfileCard";
 import { ButtonLink } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
@@ -12,9 +14,10 @@ import { ru } from "@/i18n/ru";
 import { cn } from "@/lib/cn";
 
 import { SectionFrame } from "./appearance";
+import { COLLAGE_RENDERERS } from "./collage";
 import { MEDIA_RENDERERS } from "./media";
 import { PERSONAL_RENDERERS } from "./personal";
-import { anchorId, type AnyBlock, type ContactKind } from "./schemas";
+import { anchorId, isVideo, type AnyBlock, type ContactKind, type SettingsOf } from "./schemas";
 import {
   CWRAP,
   SectionHead,
@@ -27,47 +30,177 @@ import {
 
 export { CWRAP, type RenderContext };
 
+function HeroText({ s, center = false }: { s: SettingsOf<"hero">; center?: boolean }) {
+  return (
+    <div className={cn("flex flex-col gap-6", center && "items-center text-center")} data-enter>
+      {s.label && <span className="label">{s.label}</span>}
+      <h1 className="font-display text-ch1 font-medium">{s.title}</h1>
+      {s.lead && <p className="max-w-[32em] text-clead whitespace-pre-line text-ink-2">{s.lead}</p>}
+      {(s.primary || s.secondary) && (
+        <div className={cn("flex flex-wrap gap-3 pt-1", center && "justify-center")}>
+          {s.primary && (
+            <ButtonLink href={s.primary.url} arrow>
+              {s.primary.label}
+            </ButtonLink>
+          )}
+          {s.secondary && (
+            <ButtonLink href={s.secondary.url} variant="secondary">
+              {s.secondary.label}
+            </ButtonLink>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Scrapbook layouts for 1–6 pictures on a 6×6 board: [x, y, w, h, tilt°].
+ * Pieces overlap a little and lean, later ones on top.
+ */
+const BOARDS: Record<number, [number, number, number, number, number][]> = {
+  1: [[0, 0, 6, 6, 0]],
+  2: [
+    [0, 0, 4, 5, -2],
+    [3, 2, 3, 4, 3],
+  ],
+  3: [
+    [0, 0, 4, 4, -2],
+    [4, 0, 2, 3, 2],
+    [2, 3, 4, 3, -1],
+  ],
+  4: [
+    [0, 0, 3, 4, -2],
+    [3, 0, 3, 3, 2],
+    [0, 4, 2, 2, 1],
+    [2, 3, 4, 3, -1],
+  ],
+  5: [
+    [0, 0, 3, 3, -2],
+    [3, 0, 3, 4, 2],
+    [0, 3, 2, 3, 1],
+    [2, 3, 2, 3, -3],
+    [4, 4, 2, 2, 2],
+  ],
+  6: [
+    [0, 0, 2, 3, -2],
+    [2, 0, 4, 3, 1],
+    [0, 3, 3, 3, 2],
+    [3, 3, 3, 2, -1],
+    [3, 5, 2, 1, 0],
+    [5, 5, 1, 1, 3],
+  ],
+};
+
+function HeroCollage({ media }: { media: SettingsOf<"hero">["media"] }) {
+  const board = BOARDS[media.length] ?? [];
+  return (
+    <div
+      data-hero-collage=""
+      className="grid aspect-square w-full grid-cols-6 grid-rows-6 gap-2 @5xl:gap-3"
+    >
+      {media.map((item, i) => {
+        const [x, y, w, h, tilt] = board[i];
+        return (
+          <div
+            key={item.id}
+            className="relative overflow-hidden rounded-md border border-line-2 bg-raised shadow-[0_18px_40px_-18px_rgba(0,0,0,.7)]"
+            style={{
+              gridColumn: `${x + 1} / span ${w}`,
+              gridRow: `${y + 1} / span ${h}`,
+              transform: tilt ? `rotate(${tilt}deg)` : undefined,
+              zIndex: i + 1,
+            }}
+          >
+            {isVideo(item) ? (
+              <LoopVideo src={item.url} className="absolute inset-0 size-full" />
+            ) : (
+              <Image
+                src={item.url}
+                alt=""
+                fill
+                unoptimized
+                sizes="(min-width: 1024px) 300px, 50vw"
+                className="object-cover"
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function Hero({ id, settings: s, ctx }: Props<"hero">) {
   const name = s.card_name || ctx.siteTitle;
+
+  if (s.layout === "fullscreen") {
+    const center = s.align === "center";
+    const shade = `rgba(0, 0, 0, ${s.dim / 100})`;
+    const background = s.background;
+    return (
+      <header
+        id={id}
+        data-hero="fullscreen"
+        className="relative isolate flex min-h-[min(100svh,60rem)] items-center overflow-hidden py-20"
+      >
+        {background && (
+          <span aria-hidden="true" className="absolute inset-0 -z-10">
+            {isVideo(background) ? (
+              <LoopVideo src={background.url} className="absolute inset-0 size-full" />
+            ) : (
+              <Image
+                src={background.url}
+                alt=""
+                fill
+                unoptimized
+                priority
+                sizes="100vw"
+                className="object-cover"
+              />
+            )}
+            <span
+              className="absolute inset-0"
+              style={{ background: `linear-gradient(${shade}, ${shade})` }}
+            />
+          </span>
+        )}
+        <div className={cn(CWRAP, center ? "flex justify-center" : "")}>
+          <div className={cn(center ? "max-w-[52rem]" : "max-w-[44rem]")}>
+            <HeroText s={s} center={center} />
+          </div>
+        </div>
+      </header>
+    );
+  }
+
+  const side =
+    s.layout === "collage" ? (
+      s.media.length ? (
+        <HeroCollage media={s.media} />
+      ) : null
+    ) : name ? (
+      <ProfileCard
+        name={name}
+        role={s.card_role}
+        address={ctx.address}
+        chips={s.chips}
+        avatarUrl={s.avatar?.url}
+        pattern={s.pattern}
+      />
+    ) : null;
+
   return (
     <header
       id={id}
+      data-hero={s.layout}
       className={cn(
         CWRAP,
         "grid grid-cols-[minmax(0,1fr)] items-center gap-12 py-16 @5xl:grid-cols-[minmax(0,1fr)_520px] @5xl:gap-16 @5xl:py-24",
       )}
     >
-      <div className="flex flex-col gap-6" data-enter>
-        {s.label && <span className="label">{s.label}</span>}
-        <h1 className="font-display text-ch1 font-medium">{s.title}</h1>
-        {s.lead && (
-          <p className="max-w-[32em] text-clead whitespace-pre-line text-ink-2">{s.lead}</p>
-        )}
-        {(s.primary || s.secondary) && (
-          <div className="flex flex-wrap gap-3 pt-1">
-            {s.primary && (
-              <ButtonLink href={s.primary.url} arrow>
-                {s.primary.label}
-              </ButtonLink>
-            )}
-            {s.secondary && (
-              <ButtonLink href={s.secondary.url} variant="secondary">
-                {s.secondary.label}
-              </ButtonLink>
-            )}
-          </div>
-        )}
-      </div>
-      {name && (
-        <ProfileCard
-          name={name}
-          role={s.card_role}
-          address={ctx.address}
-          chips={s.chips}
-          avatarUrl={s.avatar?.url}
-          pattern={s.pattern}
-        />
-      )}
+      <HeroText s={s} />
+      {side}
     </header>
   );
 }
@@ -362,6 +495,7 @@ const RENDERERS: { [T in AnyBlock["type"]]: (props: Props<T>) => ReactNode } = {
   resume: Resume,
   ...PERSONAL_RENDERERS,
   ...MEDIA_RENDERERS,
+  ...COLLAGE_RENDERERS,
 };
 
 /** Renders visible blocks; a block that fails to render never breaks the page. */

@@ -1,18 +1,27 @@
 /**
- * Fills an existing account with two ready cards built from the showcase samples:
- * a business card (/ui/sample) and a personal card with shelves, the Dark Souls series
- * and posts (/ui/sample/personal). Goes through the public API like the cabinet does.
+ * Fills an existing account with three ready cards built from the showcase samples:
+ * a business card (/ui/sample), a personal card with shelves, the Dark Souls series
+ * and posts (/ui/sample/personal), and a gothic card with a fog-loop hero, a collage and
+ * a running strip (/ui/sample/gothic; its files from public/demo are uploaded).
+ * Goes through the public API like the cabinet does.
  *
  *   node scripts/seed-demo.mjs --email test@zxc.local --password test-password-123
  *
  * Options: --api http://localhost:8000, --origin http://localhost:3000,
- * --business anna, --personal sasha (slugs). Re-running recreates both demo sites;
+ * --business anna, --personal sasha, --gothic mira (slugs). Re-running recreates the sites;
  * catalog titles and posts are matched by name and not duplicated.
  * Needs Node 22.18+ (imports the TypeScript samples with type stripping).
  */
+import { readFile } from "node:fs/promises";
 import { parseArgs } from "node:util";
 
 import { SAMPLE_BUSINESS_BLOCKS } from "../src/blocks/sample.ts";
+import {
+  DEMO_FILES,
+  SAMPLE_GOTHIC_BLOCKS,
+  SAMPLE_GOTHIC_THEME,
+  demo,
+} from "../src/blocks/sample-gothic.ts";
 import {
   SAMPLE_CATALOG,
   SAMPLE_GAMES_BLOCKS,
@@ -27,6 +36,7 @@ const { values: opts } = parseArgs({
     origin: { type: "string", default: "http://localhost:3000" },
     business: { type: "string", default: "anna" },
     personal: { type: "string", default: "sasha" },
+    gothic: { type: "string", default: "mira" },
   },
 });
 
@@ -70,6 +80,30 @@ function remap(blocks, ids) {
   let json = JSON.stringify(blocks);
   for (const [from, to] of ids) json = json.replaceAll(from, to);
   return JSON.parse(json);
+}
+
+/** Uploads the gothic demo files; returns [sample id or url, uploaded id or url] pairs. */
+async function uploadDemoFiles() {
+  const pairs = [];
+  for (const [name, { file }] of Object.entries(DEMO_FILES)) {
+    const video = file.endsWith(".mp4");
+    const form = new FormData();
+    const bytes = await readFile(new URL(`../public/demo/${file}`, import.meta.url));
+    form.append("file", new Blob([bytes], { type: video ? "video/mp4" : "image/webp" }), file);
+    form.append("purpose", video ? "video" : "image");
+    const response = await fetch(`${opts.api}/api/media`, {
+      method: "POST",
+      headers: { Origin: opts.origin, Cookie: cookie },
+      body: form,
+    });
+    const data = await response.json();
+    if (!response.ok)
+      throw new Error(`upload ${file} → ${response.status}: ${JSON.stringify(data)}`);
+    const sample = demo(name);
+    pairs.push([sample.id, data.id], [sample.url, data.url]);
+  }
+  console.log(`  uploaded ${Object.keys(DEMO_FILES).length} demo files`);
+  return pairs;
 }
 
 async function recreateSite(kind, slug, title) {
@@ -158,6 +192,19 @@ async function main() {
   await call("PATCH", `/api/sites/${personal.id}`, { accent: "#b6ff2e", second: "#ff4f8b" });
   await call("POST", `/api/sites/${personal.id}/publish`);
   console.log(`  published: ${personal.host}`);
+
+  console.log("Gothic card");
+  const files = await uploadDemoFiles();
+  const gothic = await recreateSite("business", opts.gothic, "Мира Чернова");
+  await call("PUT", `/api/sites/${gothic.id}/pages/${gothic.pages[0].id}/blocks`, {
+    blocks: remap(SAMPLE_GOTHIC_BLOCKS, files),
+  });
+  await call("PATCH", `/api/sites/${gothic.id}`, {
+    ...SAMPLE_GOTHIC_THEME,
+    seo_title: "Мира Чернова — готическая иллюстрация и тату",
+  });
+  await call("POST", `/api/sites/${gothic.id}/publish`);
+  console.log(`  published: ${gothic.host}`);
 }
 
 main().catch((error) => {

@@ -177,7 +177,7 @@ test("gothic style, fonts and a section background reach the public card", async
   await page.goto(`http://${slug}.localhost:${PORT}`);
   const root = page.locator("[data-site]");
   await expect(root).toHaveAttribute("data-style", "gothic");
-  await expect(root).toHaveAttribute("style", /--site-display: var\(--ff-ruslan\)/);
+  await expect(root).toHaveAttribute("style", /--site-display: ?var\(--ff-ruslan\)/);
   await expect(
     page.locator("[data-section][data-background='pattern'] [data-ornament]"),
   ).toHaveCount(1);

@@ -153,7 +153,10 @@ test("gothic style, fonts and a section background reach the public card", async
     .getByRole("radiogroup", { name: "Фон" })
     .getByRole("radio", { name: "Узор" })
     .click();
-  await section.getByRole("radio", { name: "Арки" }).click();
+  await section
+    .getByRole("radiogroup", { name: "Узор фона" })
+    .getByRole("radio", { name: "Арки" })
+    .click();
   await section.getByRole("radio", { name: "Орнамент" }).click();
   await saved(page);
 

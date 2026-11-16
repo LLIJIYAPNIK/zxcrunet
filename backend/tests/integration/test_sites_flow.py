@@ -45,7 +45,13 @@ async def test_create_edit_publish_resolve_delete(
     resolved = await client.get("/api/public/sites/resolve", params={"host": host})
     content = resolved.json()["content"]
     assert resolved.status_code == 200
-    assert content["theme"] == {"accent": "#b6ff2e", "second": "#ff4f8b"}
+    assert content["theme"] == {
+        "accent": "#b6ff2e",
+        "second": "#ff4f8b",
+        "style": "neon",
+        "heading_font": "",
+        "body_font": "",
+    }
     assert [p["path"] for p in content["pages"]] == ["", "games"]
 
     stored = await client.get(f"/api/sites/{site_id}")

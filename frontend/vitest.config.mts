@@ -5,7 +5,10 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+      "next/font/google": fileURLToPath(new URL("./src/test/next-font.ts", import.meta.url)),
+    },
   },
   test: {
     environment: "jsdom",

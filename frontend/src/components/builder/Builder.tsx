@@ -25,6 +25,7 @@ import { EDITORS } from "@/blocks/editors";
 import {
   BLOCK_TYPES,
   META,
+  cleanAppearance,
   defaultSettings,
   validateBlock,
   type AnyBlock,
@@ -41,7 +42,11 @@ import { Switch } from "@/components/ui/Switch";
 import { EMPTY_CATALOG, type Catalog } from "@/lib/catalog/catalog";
 import { cn } from "@/lib/cn";
 import { api, type Site } from "@/lib/api/client";
+import { lookFonts } from "@/lib/theme/styles";
 import { ru } from "@/i18n/ru";
+
+import { AppearanceEditor } from "./AppearanceEditor";
+import { DesignPanel, type Theme } from "./DesignPanel";
 
 const t = ru.builder;
 
@@ -207,6 +212,7 @@ export function Builder({ initial, emailVerified, catalog = EMPTY_CATALOG }: Bui
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [pane, setPane] = useState<"blocks" | "preview">("blocks");
+  const [panel, setPanel] = useState<"blocks" | "design">("blocks");
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [invalidId, setInvalidId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -258,6 +264,7 @@ export function Builder({ initial, emailVerified, catalog = EMPTY_CATALOG }: Bui
             version: b.version,
             hidden: b.hidden,
             settings: b.settings as Record<string, unknown>,
+            appearance: b.appearance ?? null,
           })),
         },
       });
@@ -269,7 +276,8 @@ export function Builder({ initial, emailVerified, catalog = EMPTY_CATALOG }: Bui
       dirty.current.delete(id);
     }
     const fresh = await api.get("/api/sites/{site_id}", { path: { site_id: site.id } });
-    if (fresh.ok) setSite(fresh.data);
+    // The local theme wins while a design change is still waiting to be saved.
+    if (fresh.ok) setSite((prev) => ({ ...fresh.data, theme: prev.theme }));
     setSaveState("saved");
     return true;
   }, [site.id]);
@@ -286,9 +294,50 @@ export function Builder({ initial, emailVerified, catalog = EMPTY_CATALOG }: Bui
     [pageId, flush],
   );
 
+  // --- design: style, palette, fonts (saved apart from the blocks) ------------
+
+  const themePatch = useRef<Partial<Theme>>({});
+  const themeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const saveTheme = useCallback(async (): Promise<boolean> => {
+    if (themeTimer.current) clearTimeout(themeTimer.current);
+    themeTimer.current = null;
+    const patch = themePatch.current;
+    if (!Object.keys(patch).length) return true;
+    themePatch.current = {};
+    setSaveState("saving");
+    const result = await api.patch("/api/sites/{site_id}", {
+      path: { site_id: site.id },
+      body: patch,
+    });
+    if (!result.ok) {
+      setSaveState("error");
+      setNotice(siteErrorText(result.error.code));
+      return false;
+    }
+    // Keep edits made while the request was in flight.
+    setSite((prev) => ({ ...result.data, theme: prev.theme }));
+    setSaveState("saved");
+    return true;
+  }, [site.id]);
+
+  function changeTheme(patch: Partial<Theme>) {
+    // Colours travel together: the API derives the second accent when it is null.
+    const full: Partial<Theme> =
+      "accent" in patch || "second" in patch
+        ? { accent: site.theme.accent, second: site.theme.second, ...patch }
+        : patch;
+    setSite((prev) => ({ ...prev, theme: { ...prev.theme, ...full } }));
+    themePatch.current = { ...themePatch.current, ...full };
+    setSaveState("pending");
+    setNotice(null);
+    if (themeTimer.current) clearTimeout(themeTimer.current);
+    themeTimer.current = setTimeout(() => void saveTheme(), 700);
+  }
+
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
-      if (dirty.current.size) event.preventDefault();
+      if (dirty.current.size || Object.keys(themePatch.current).length) event.preventDefault();
     };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
@@ -318,7 +367,7 @@ export function Builder({ initial, emailVerified, catalog = EMPTY_CATALOG }: Bui
   }
 
   async function publish() {
-    if (!(await flush())) return;
+    if (!(await saveTheme()) || !(await flush())) return;
     const result = await api.post("/api/sites/{site_id}/publish", { path: { site_id: site.id } });
     if (result.ok) {
       setSite(result.data);
@@ -456,86 +505,125 @@ export function Builder({ initial, emailVerified, catalog = EMPTY_CATALOG }: Bui
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(320px,400px)_minmax(0,1fr)]">
         {/* blocks + editor */}
         <div className={cn("flex flex-col gap-4", pane === "preview" && "max-lg:hidden")}>
-          {blocks.length === 0 && <p className="text-ink-2">{t.empty}</p>}
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-            <SortableContext items={blocks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
-              <ul className="flex flex-col gap-2" aria-label={t.blocks}>
-                {blocks.map((block) => (
-                  <BlockRow
-                    key={block.id}
-                    block={block}
-                    selected={block.id === selectedId}
-                    invalid={block.id === invalidId}
-                    onSelect={() => setSelectedId(block.id === selectedId ? null : block.id)}
-                    onToggle={(visible) =>
-                      update(
-                        blocks.map((b) => (b.id === block.id ? { ...b, hidden: !visible } : b)),
-                      )
-                    }
-                    onRemove={async () => {
-                      const ok = await confirm({
-                        title: t.removeConfirm.replace("{block}", titleOf(block)),
-                        text: t.removeConfirmText,
-                        confirmLabel: ru.dialog.remove,
-                        danger: true,
-                      });
-                      if (!ok) return;
-                      update(blocks.filter((b) => b.id !== block.id));
-                      setSelectedId((id) => (id === block.id ? null : id));
-                    }}
-                  />
-                ))}
-              </ul>
-            </SortableContext>
-          </DndContext>
-          <button
-            type="button"
-            onClick={() => library.current?.showModal()}
-            className="flex h-13 items-center justify-center gap-2 rounded-md border border-dashed border-line-2 font-medium text-ink-2 transition-colors hover:border-accent hover:text-accent"
-          >
-            <Icon name="plus" size={18} />
-            {t.addBlock}
-          </button>
-
-          {selected && SelectedEditor && (
-            <section
-              aria-label={titleOf(selected)}
-              className="flex flex-col gap-5 rounded-lg border border-line bg-surface p-5"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="font-display text-h3 font-medium">{titleOf(selected)}</h2>
-                <button
-                  type="button"
-                  aria-label={t.close}
-                  onClick={() => setSelectedId(null)}
-                  className="grid size-9 place-items-center rounded-sm text-muted hover:text-ink"
+          <Segmented
+            label={t.design.title}
+            value={panel}
+            onChange={setPanel}
+            options={[
+              { value: "blocks", label: t.blocks },
+              { value: "design", label: t.design.open },
+            ]}
+          />
+          {panel === "design" ? (
+            <DesignPanel theme={site.theme} onChange={changeTheme} />
+          ) : (
+            <>
+              {blocks.length === 0 && <p className="text-ink-2">{t.empty}</p>}
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={onDragEnd}
+              >
+                <SortableContext
+                  items={blocks.map((b) => b.id)}
+                  strategy={verticalListSortingStrategy}
                 >
-                  <Icon name="close" size={18} />
-                </button>
-              </div>
-              {selectedError && (
-                <FormMessage tone="error">
-                  {selectedError.issues
-                    .slice(0, 3)
-                    .map((i) => i.message)
-                    .join(" · ")}
-                </FormMessage>
+                  <ul className="flex flex-col gap-2" aria-label={t.blocks}>
+                    {blocks.map((block) => (
+                      <BlockRow
+                        key={block.id}
+                        block={block}
+                        selected={block.id === selectedId}
+                        invalid={block.id === invalidId}
+                        onSelect={() => setSelectedId(block.id === selectedId ? null : block.id)}
+                        onToggle={(visible) =>
+                          update(
+                            blocks.map((b) => (b.id === block.id ? { ...b, hidden: !visible } : b)),
+                          )
+                        }
+                        onRemove={async () => {
+                          const ok = await confirm({
+                            title: t.removeConfirm.replace("{block}", titleOf(block)),
+                            text: t.removeConfirmText,
+                            confirmLabel: ru.dialog.remove,
+                            danger: true,
+                          });
+                          if (!ok) return;
+                          update(blocks.filter((b) => b.id !== block.id));
+                          setSelectedId((id) => (id === block.id ? null : id));
+                        }}
+                      />
+                    ))}
+                  </ul>
+                </SortableContext>
+              </DndContext>
+              <button
+                type="button"
+                onClick={() => library.current?.showModal()}
+                className="flex h-13 items-center justify-center gap-2 rounded-md border border-dashed border-line-2 font-medium text-ink-2 transition-colors hover:border-accent hover:text-accent"
+              >
+                <Icon name="plus" size={18} />
+                {t.addBlock}
+              </button>
+
+              {selected && SelectedEditor && (
+                <section
+                  aria-label={titleOf(selected)}
+                  className="flex flex-col gap-5 rounded-lg border border-line bg-surface p-5"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <h2 className="font-display text-h3 font-medium">{titleOf(selected)}</h2>
+                    <button
+                      type="button"
+                      aria-label={t.close}
+                      onClick={() => setSelectedId(null)}
+                      className="grid size-9 place-items-center rounded-sm text-muted hover:text-ink"
+                    >
+                      <Icon name="close" size={18} />
+                    </button>
+                  </div>
+                  {selectedError && (
+                    <FormMessage tone="error">
+                      {selectedError.issues
+                        .slice(0, 3)
+                        .map((i) => i.message)
+                        .join(" · ")}
+                    </FormMessage>
+                  )}
+                  <CatalogProvider catalog={catalog}>
+                    <SelectedEditor
+                      value={selected.settings}
+                      onChange={(settings) =>
+                        update(
+                          blocks.map((b) =>
+                            b.id === selected.id ? ({ ...b, settings } as AnyBlock) : b,
+                          ),
+                        )
+                      }
+                    />
+                  </CatalogProvider>
+                  <div className="border-t border-line pt-5">
+                    <AppearanceEditor
+                      value={selected.appearance}
+                      siteFonts={lookFonts(site.theme)}
+                      onChange={(appearance) =>
+                        update(
+                          blocks.map((b) =>
+                            b.id === selected.id
+                              ? ({ ...b, appearance: cleanAppearance(appearance) } as AnyBlock)
+                              : b,
+                          ),
+                        )
+                      }
+                    />
+                  </div>
+                </section>
               )}
-              <CatalogProvider catalog={catalog}>
-                <SelectedEditor
-                  value={selected.settings}
-                  onChange={(settings) =>
-                    update(
-                      blocks.map((b) =>
-                        b.id === selected.id ? ({ ...b, settings } as AnyBlock) : b,
-                      ),
-                    )
-                  }
-                />
-              </CatalogProvider>
-            </section>
+              {!selected && blocks.length > 0 && (
+                <p className="text-sm text-muted">{t.selectHint}</p>
+              )}
+            </>
           )}
-          {!selected && blocks.length > 0 && <p className="text-sm text-muted">{t.selectHint}</p>}
         </div>
 
         {/* preview */}

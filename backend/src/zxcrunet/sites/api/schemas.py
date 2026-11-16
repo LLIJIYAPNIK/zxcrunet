@@ -4,12 +4,19 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from zxcrunet.sites.application.blocks import MAX_BLOCKS_PER_PAGE, BlockIn
+from zxcrunet.sites.application.blocks import (
+    MAX_BLOCKS_PER_PAGE,
+    Appearance,
+    BlockIn,
+    BodyFontId,
+    FontId,
+)
 from zxcrunet.sites.application.use_cases import ResolvedSite, SlugCheck
 from zxcrunet.sites.domain.site import Page, Site
 
 Kind = Literal["business", "personal"]
 Status = Literal["draft", "published", "suspended"]
+Style = Literal["neon", "gothic"]
 
 
 class CreateSiteIn(BaseModel):
@@ -23,6 +30,10 @@ class UpdateSiteIn(BaseModel):
     slug: str | None = Field(default=None, max_length=64)
     accent: str | None = Field(default=None, pattern=r"^#[0-9a-fA-F]{6}$")
     second: str | None = Field(default=None, pattern=r"^#[0-9a-fA-F]{6}$")
+    style: Style | None = None
+    #: Empty string: the style's default font.
+    heading_font: FontId | Literal[""] | None = None
+    body_font: BodyFontId | Literal[""] | None = None
     seo_title: str | None = Field(default=None, max_length=200)
     seo_description: str | None = Field(default=None, max_length=400)
 
@@ -40,6 +51,10 @@ class UpdatePageIn(BaseModel):
 class ThemeOut(BaseModel):
     accent: str
     second: str | None
+    # Defaults keep snapshots published before styles existed readable.
+    style: Style = "neon"
+    heading_font: FontId | Literal[""] = ""
+    body_font: BodyFontId | Literal[""] = ""
 
 
 class BlockOut(BaseModel):
@@ -48,6 +63,7 @@ class BlockOut(BaseModel):
     version: int
     hidden: bool
     settings: dict[str, Any]
+    appearance: Appearance | None = None
 
 
 class SetBlocksIn(BaseModel):
@@ -99,7 +115,7 @@ class SiteSummaryOut(BaseModel):
             host=host,
             title=site.title,
             status=site.status.value,
-            theme=ThemeOut(accent=site.theme.accent, second=site.theme.second),
+            theme=ThemeOut.model_validate(site.theme.as_dict()),
             has_unpublished_changes=site.has_unpublished_changes,
             unpublished_changes=site.unpublished_changes,
             created_at=site.created_at,

@@ -413,6 +413,174 @@
         "title": "AdminUsersOut",
         "type": "object"
       },
+      "Appearance": {
+        "additionalProperties": false,
+        "description": "How a section looks around its content: background, room, divider, fonts.",
+        "properties": {
+          "angle": {
+            "default": 180,
+            "maximum": 360.0,
+            "minimum": 0.0,
+            "title": "Angle",
+            "type": "integer"
+          },
+          "background": {
+            "default": "none",
+            "enum": [
+              "none",
+              "surface",
+              "accent",
+              "color",
+              "gradient",
+              "image",
+              "pattern"
+            ],
+            "title": "Background",
+            "type": "string"
+          },
+          "body_font": {
+            "anyOf": [
+              {
+                "enum": [
+                  "onest",
+                  "inter",
+                  "manrope",
+                  "golos",
+                  "cormorant",
+                  "eb-garamond",
+                  "lora",
+                  "pt-serif",
+                  "old-standard",
+                  "jetbrains",
+                  "ibm-plex-mono"
+                ],
+                "type": "string"
+              },
+              {
+                "const": "",
+                "type": "string"
+              }
+            ],
+            "default": "",
+            "title": "Body Font"
+          },
+          "color": {
+            "default": "#121722",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "title": "Color",
+            "type": "string"
+          },
+          "color2": {
+            "default": "#05070b",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "title": "Color2",
+            "type": "string"
+          },
+          "dim": {
+            "default": 45,
+            "maximum": 90.0,
+            "minimum": 0.0,
+            "title": "Dim",
+            "type": "integer"
+          },
+          "divider": {
+            "default": "none",
+            "enum": [
+              "none",
+              "line",
+              "ornament"
+            ],
+            "title": "Divider",
+            "type": "string"
+          },
+          "heading_font": {
+            "anyOf": [
+              {
+                "enum": [
+                  "onest",
+                  "inter",
+                  "manrope",
+                  "golos",
+                  "unbounded",
+                  "russo",
+                  "dela-gothic",
+                  "tektur",
+                  "cormorant",
+                  "playfair",
+                  "eb-garamond",
+                  "lora",
+                  "pt-serif",
+                  "old-standard",
+                  "yeseva",
+                  "prata",
+                  "ruslan",
+                  "monomakh",
+                  "rubik-glitch",
+                  "rubik-wet-paint",
+                  "caveat",
+                  "marck",
+                  "jetbrains",
+                  "ibm-plex-mono",
+                  "press-start",
+                  "pixelify",
+                  "poiret"
+                ],
+                "type": "string"
+              },
+              {
+                "const": "",
+                "type": "string"
+              }
+            ],
+            "default": "",
+            "title": "Heading Font"
+          },
+          "image": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pattern": {
+            "default": "dots",
+            "enum": [
+              "rings",
+              "glow",
+              "dots",
+              "grid",
+              "diagonal",
+              "plus",
+              "waves",
+              "circuit",
+              "topo",
+              "lattice",
+              "arches",
+              "crosses",
+              "stars",
+              "none"
+            ],
+            "title": "Pattern",
+            "type": "string"
+          },
+          "space": {
+            "default": "none",
+            "enum": [
+              "none",
+              "s",
+              "m",
+              "l"
+            ],
+            "title": "Space",
+            "type": "string"
+          }
+        },
+        "title": "Appearance",
+        "type": "object"
+      },
       "AuditOut": {
         "properties": {
           "action": {
@@ -497,6 +665,16 @@
         "additionalProperties": false,
         "description": "Envelope the editor sends; `settings` is checked against the type's schema.",
         "properties": {
+          "appearance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Appearance"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "hidden": {
             "default": false,
             "title": "Hidden",
@@ -552,6 +730,16 @@
       },
       "BlockOut": {
         "properties": {
+          "appearance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Appearance"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "hidden": {
             "title": "Hidden",
             "type": "boolean"
@@ -2864,6 +3052,74 @@
             "title": "Accent",
             "type": "string"
           },
+          "body_font": {
+            "anyOf": [
+              {
+                "enum": [
+                  "onest",
+                  "inter",
+                  "manrope",
+                  "golos",
+                  "cormorant",
+                  "eb-garamond",
+                  "lora",
+                  "pt-serif",
+                  "old-standard",
+                  "jetbrains",
+                  "ibm-plex-mono"
+                ],
+                "type": "string"
+              },
+              {
+                "const": "",
+                "type": "string"
+              }
+            ],
+            "default": "",
+            "title": "Body Font"
+          },
+          "heading_font": {
+            "anyOf": [
+              {
+                "enum": [
+                  "onest",
+                  "inter",
+                  "manrope",
+                  "golos",
+                  "unbounded",
+                  "russo",
+                  "dela-gothic",
+                  "tektur",
+                  "cormorant",
+                  "playfair",
+                  "eb-garamond",
+                  "lora",
+                  "pt-serif",
+                  "old-standard",
+                  "yeseva",
+                  "prata",
+                  "ruslan",
+                  "monomakh",
+                  "rubik-glitch",
+                  "rubik-wet-paint",
+                  "caveat",
+                  "marck",
+                  "jetbrains",
+                  "ibm-plex-mono",
+                  "press-start",
+                  "pixelify",
+                  "poiret"
+                ],
+                "type": "string"
+              },
+              {
+                "const": "",
+                "type": "string"
+              }
+            ],
+            "default": "",
+            "title": "Heading Font"
+          },
           "second": {
             "anyOf": [
               {
@@ -2874,6 +3130,15 @@
               }
             ],
             "title": "Second"
+          },
+          "style": {
+            "default": "neon",
+            "enum": [
+              "neon",
+              "gothic"
+            ],
+            "title": "Style",
+            "type": "string"
           }
         },
         "required": [
@@ -3245,6 +3510,78 @@
             ],
             "title": "Accent"
           },
+          "body_font": {
+            "anyOf": [
+              {
+                "enum": [
+                  "onest",
+                  "inter",
+                  "manrope",
+                  "golos",
+                  "cormorant",
+                  "eb-garamond",
+                  "lora",
+                  "pt-serif",
+                  "old-standard",
+                  "jetbrains",
+                  "ibm-plex-mono"
+                ],
+                "type": "string"
+              },
+              {
+                "const": "",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body Font"
+          },
+          "heading_font": {
+            "anyOf": [
+              {
+                "enum": [
+                  "onest",
+                  "inter",
+                  "manrope",
+                  "golos",
+                  "unbounded",
+                  "russo",
+                  "dela-gothic",
+                  "tektur",
+                  "cormorant",
+                  "playfair",
+                  "eb-garamond",
+                  "lora",
+                  "pt-serif",
+                  "old-standard",
+                  "yeseva",
+                  "prata",
+                  "ruslan",
+                  "monomakh",
+                  "rubik-glitch",
+                  "rubik-wet-paint",
+                  "caveat",
+                  "marck",
+                  "jetbrains",
+                  "ibm-plex-mono",
+                  "press-start",
+                  "pixelify",
+                  "poiret"
+                ],
+                "type": "string"
+              },
+              {
+                "const": "",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heading Font"
+          },
           "second": {
             "anyOf": [
               {
@@ -3292,6 +3629,21 @@
               }
             ],
             "title": "Slug"
+          },
+          "style": {
+            "anyOf": [
+              {
+                "enum": [
+                  "neon",
+                  "gothic"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Style"
           },
           "title": {
             "anyOf": [

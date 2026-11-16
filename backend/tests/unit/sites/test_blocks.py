@@ -1,17 +1,20 @@
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, get_args
 from uuid import uuid4
 
 import pytest
+from pydantic import ValidationError
 
 from zxcrunet.sites.application.blocks import (
     MAX_BLOCKS_PER_PAGE,
     BlockIn,
+    BodyFontId,
+    FontId,
     InvalidBlockError,
     media_ids,
     validate_blocks,
 )
-from zxcrunet.sites.domain.site import Site, SiteKind, Slug
+from zxcrunet.sites.domain.site import BODY_FONTS, FONTS, Site, SiteKind, Slug
 
 NOW = datetime(2026, 11, 12, tzinfo=UTC)
 
@@ -217,3 +220,53 @@ def test_stack_rejects_bad_skills(skill: dict[str, Any]) -> None:
 def test_stack_is_business_only() -> None:
     with pytest.raises(InvalidBlockError, match="not available"):
         validate_blocks([block("stack", {"items": [{"name": "Python"}]})], "personal")
+
+
+def test_fonts_mirror_the_domain() -> None:
+    assert get_args(FontId) == FONTS
+    assert set(get_args(BodyFontId)) == BODY_FONTS
+
+
+def test_appearance_is_stored_only_when_set() -> None:
+    cover = uuid4()
+    plain, styled = validate_blocks(
+        [
+            block("hero", HERO, appearance={}),
+            block(
+                "facts",
+                {"items": [{"value": "8", "label": "лет"}]},
+                appearance={
+                    "background": "image",
+                    "image": {"id": str(cover), "url": "/media/2026/11/c.webp"},
+                    "dim": 60,
+                    "color": "#AABBCC",
+                    "divider": "ornament",
+                    "heading_font": "ruslan",
+                    "body_font": "lora",
+                },
+            ),
+        ]
+    )
+
+    assert "appearance" not in plain
+    assert styled["appearance"]["background"] == "image"
+    assert styled["appearance"]["color"] == "#aabbcc"
+    assert styled["appearance"]["space"] == "none"
+    assert media_ids([plain, styled]) == {cover}
+
+
+@pytest.mark.parametrize(
+    "appearance",
+    [
+        {"background": "video"},
+        {"color": "red"},
+        {"dim": 95},
+        {"angle": 400},
+        {"heading_font": "comic-sans"},
+        {"body_font": "ruslan"},
+        {"extra": 1},
+    ],
+)
+def test_bad_appearance_is_rejected(appearance: dict[str, Any]) -> None:
+    with pytest.raises(ValidationError):
+        block("hero", HERO, appearance=appearance)

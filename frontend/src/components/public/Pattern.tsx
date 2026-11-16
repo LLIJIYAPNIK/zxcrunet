@@ -54,6 +54,26 @@ const TILES: Record<Exclude<PatternId, "glow" | "none">, Tile> = {
     ),
     size: "80px 80px",
   },
+  lattice: {
+    svg: svg(24, 32, `<path d='M12 0L24 16L12 32L0 16Z' ${STROKE}/>`),
+    size: "24px 32px",
+  },
+  arches: {
+    svg: svg(40, 64, `<path d='M3 64V30Q3 10 20 3Q37 10 37 30V64M20 3V0' ${STROKE}/>`),
+    size: "40px 64px",
+  },
+  crosses: {
+    svg: svg(32, 32, `<path d='M16 8v16M11 13h10' ${STROKE} stroke-width='1.4'/>`),
+    size: "32px 32px",
+  },
+  stars: {
+    svg: svg(
+      120,
+      120,
+      "<path d='M18 17L19.25 20.75L23 22L19.25 23.25L18 27L16.75 23.25L13 22L16.75 20.75Z'/><path d='M74 9L74.75 11.25L77 12L74.75 12.75L74 15L73.25 12.75L71 12L73.25 11.25Z'/><path d='M102 54L103 57L106 58L103 59L102 62L101 59L98 58L101 57Z'/><path d='M40 75L40.75 77.25L43 78L40.75 78.75L40 81L39.25 78.75L37 78L39.25 77.25Z'/><path d='M86 95L87.25 98.75L91 100L87.25 101.25L86 105L84.75 101.25L81 100L84.75 98.75Z'/><path d='M12 105L12.75 107.25L15 108L12.75 108.75L12 111L11.25 108.75L9 108L11.25 107.25Z'/><path d='M60 42L60.5 43.5L62 44L60.5 44.5L60 46L59.5 44.5L58 44L59.5 43.5Z'/>",
+    ),
+    size: "120px 120px",
+  },
   topo: {
     svg: svg(
       400,
@@ -73,11 +93,12 @@ const TILES: Record<Exclude<PatternId, "glow" | "none">, Tile> = {
 };
 
 /** Where the pattern stays visible: a corner of a card, or the top of a wide cover. */
-export type PatternFade = "corner" | "top";
+export type PatternFade = "corner" | "top" | "full";
 
 const FADES: Record<PatternFade, string> = {
   corner: "radial-gradient(130% 130% at 100% 0%, #000 0%, rgba(0,0,0,.35) 45%, transparent 75%)",
   top: "linear-gradient(to bottom, #000 0%, rgba(0,0,0,.55) 55%, transparent 100%)",
+  full: "linear-gradient(#000, #000)",
 };
 
 const GLOW =

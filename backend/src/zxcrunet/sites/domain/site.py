@@ -1,7 +1,7 @@
 """Site aggregate: a business or personal card with pages, a draft and a published snapshot."""
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from enum import StrEnum
 from typing import Any
@@ -36,6 +36,35 @@ SUSPENSION_REASON_MAX = 500
 
 Block = dict[str, Any]
 Snapshot = dict[str, Any]
+
+
+class SiteStyle(StrEnum):
+    """The look of a card on top of its palette: fonts, corners, textures, dividers."""
+
+    NEON = "neon"
+    GOTHIC = "gothic"
+
+
+#: Curated fonts with Cyrillic, served by the frontend (mirror: `frontend/src/lib/theme/fonts.ts`).
+FONTS: tuple[str, ...] = (
+    "onest", "inter", "manrope", "golos", "unbounded", "russo", "dela-gothic", "tektur",
+    "cormorant", "playfair", "eb-garamond", "lora", "pt-serif", "old-standard", "yeseva",
+    "prata", "ruslan", "monomakh", "rubik-glitch", "rubik-wet-paint", "caveat", "marck",
+    "jetbrains", "ibm-plex-mono", "press-start", "pixelify", "poiret",
+)  # fmt: skip
+#: Fonts readable at body size; display faces are for headings only.
+BODY_FONTS: frozenset[str] = frozenset(
+    {"onest", "inter", "manrope", "golos", "cormorant", "eb-garamond", "lora", "pt-serif",
+     "old-standard", "jetbrains", "ibm-plex-mono"}
+)  # fmt: skip
+
+
+def check_fonts(heading: str, body: str) -> None:
+    """Empty means «the style's default»; otherwise a known font (body: a readable one)."""
+    if heading and heading not in FONTS:
+        raise InvalidThemeError("Unknown font", {"field": "heading_font"})
+    if body and body not in BODY_FONTS:
+        raise InvalidThemeError("Font is not available for body text", {"field": "body_font"})
 
 
 class SiteKind(StrEnum):
@@ -75,6 +104,10 @@ class Slug:
 class Theme:
     accent: str = DEFAULT_ACCENT
     second: str | None = DEFAULT_SECOND
+    style: SiteStyle = SiteStyle.NEON
+    #: Empty: the style's own fonts.
+    heading_font: str = ""
+    body_font: str = ""
 
     @classmethod
     def parse(cls, accent: str, second: str | None) -> "Theme":
@@ -82,6 +115,23 @@ class Theme:
         if not all(HEX_RE.fullmatch(v) for v in values):
             raise InvalidThemeError("Colours must be #rrggbb")
         return cls(accent=values[0], second=values[1] if second else None)
+
+    def with_colors(self, accent: str, second: str | None) -> "Theme":
+        colors = Theme.parse(accent, second)
+        return replace(self, accent=colors.accent, second=colors.second)
+
+    def with_look(self, style: SiteStyle, heading_font: str, body_font: str) -> "Theme":
+        check_fonts(heading_font, body_font)
+        return replace(self, style=style, heading_font=heading_font, body_font=body_font)
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "accent": self.accent,
+            "second": self.second,
+            "style": self.style.value,
+            "heading_font": self.heading_font,
+            "body_font": self.body_font,
+        }
 
 
 def _clean_title(raw: str, limit: int, *, allow_empty: bool = False) -> str:
@@ -243,7 +293,7 @@ class Site:
         return {
             "kind": self.kind.value,
             "title": self.title,
-            "theme": {"accent": self.theme.accent, "second": self.theme.second},
+            "theme": self.theme.as_dict(),
             "seo": {"title": self.seo_title, "description": self.seo_description},
             "pages": [
                 {

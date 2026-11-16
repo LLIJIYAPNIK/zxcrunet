@@ -1,14 +1,17 @@
 /**
- * Fills an existing account with three ready cards built from the showcase samples:
- * a business card (/ui/sample), a personal card with shelves, the Dark Souls series
- * and posts (/ui/sample/personal), and a gothic card with a fog-loop hero, a collage and
- * a running strip (/ui/sample/gothic; its files from public/demo are uploaded).
- * Goes through the public API like the cabinet does.
+ * Fills an existing account with ready cards built from the showcase samples:
+ * - business: a business card (/ui/sample);
+ * - personal: shelves, the Dark Souls series and posts (/ui/sample/personal);
+ * - gothic: a fog-loop hero, a collage and a running strip (/ui/sample/gothic);
+ * - zxc: sunsets counted down like 1000 − 7 (/ui/sample/zxc).
+ * Files from public/demo are uploaded. Goes through the public API like the cabinet does.
+ * Four cards need a plan with at least four sites (free has three): pick some with --only.
  *
  *   node scripts/seed-demo.mjs --email test@zxc.local --password test-password-123
  *
  * Options: --api http://localhost:8000, --origin http://localhost:3000,
- * --business anna, --personal sasha, --gothic mira (slugs). Re-running recreates the sites;
+ * --business anna, --personal sasha, --gothic mira, --zxc dead993 (slugs),
+ * --only business,personal,gothic,zxc (default: all). Re-running recreates the sites;
  * catalog titles and posts are matched by name and not duplicated.
  * Needs Node 22.18+ (imports the TypeScript samples with type stripping).
  */
@@ -27,6 +30,7 @@ import {
   SAMPLE_GAMES_BLOCKS,
   SAMPLE_PERSONAL_BLOCKS,
 } from "../src/blocks/sample-personal.ts";
+import { SAMPLE_ZXC_BLOCKS, SAMPLE_ZXC_THEME, ZXC_FILES, zxc } from "../src/blocks/sample-zxc.ts";
 
 const { values: opts } = parseArgs({
   options: {
@@ -37,6 +41,8 @@ const { values: opts } = parseArgs({
     business: { type: "string", default: "anna" },
     personal: { type: "string", default: "sasha" },
     gothic: { type: "string", default: "mira" },
+    zxc: { type: "string", default: "dead993" },
+    only: { type: "string", default: "business,personal,gothic,zxc" },
   },
 });
 
@@ -82,13 +88,16 @@ function remap(blocks, ids) {
   return JSON.parse(json);
 }
 
-/** Uploads the gothic demo files; returns [sample id or url, uploaded id or url] pairs. */
-async function uploadDemoFiles() {
+/**
+ * Uploads a sample's files from public/<folder>; returns [sample id or url, uploaded
+ * id or url] pairs for `remap`.
+ */
+async function uploadDemoFiles(files, ref, folder) {
   const pairs = [];
-  for (const [name, { file }] of Object.entries(DEMO_FILES)) {
+  for (const [name, { file }] of Object.entries(files)) {
     const video = file.endsWith(".mp4");
     const form = new FormData();
-    const bytes = await readFile(new URL(`../public/demo/${file}`, import.meta.url));
+    const bytes = await readFile(new URL(`../public/${folder}/${file}`, import.meta.url));
     form.append("file", new Blob([bytes], { type: video ? "video/mp4" : "image/webp" }), file);
     form.append("purpose", video ? "video" : "image");
     const response = await fetch(`${opts.api}/api/media`, {
@@ -99,10 +108,10 @@ async function uploadDemoFiles() {
     const data = await response.json();
     if (!response.ok)
       throw new Error(`upload ${file} → ${response.status}: ${JSON.stringify(data)}`);
-    const sample = demo(name);
+    const sample = ref(name);
     pairs.push([sample.id, data.id], [sample.url, data.url]);
   }
-  console.log(`  uploaded ${Object.keys(DEMO_FILES).length} demo files`);
+  console.log(`  uploaded ${Object.keys(files).length} files`);
   return pairs;
 }
 
@@ -158,11 +167,60 @@ async function seedCatalog() {
   return ids;
 }
 
+/** A card made from a sample whose files live in public/<folder>. */
+async function seedMediaCard({ kind, slug, title, files, ref, folder, blocks, theme, seo }) {
+  const uploaded = await uploadDemoFiles(files, ref, folder);
+  const site = await recreateSite(kind, slug, title);
+  await call("PUT", `/api/sites/${site.id}/pages/${site.pages[0].id}/blocks`, {
+    blocks: remap(blocks, uploaded),
+  });
+  await call("PATCH", `/api/sites/${site.id}`, { ...theme, seo_title: seo });
+  await call("POST", `/api/sites/${site.id}/publish`);
+  console.log(`  published: ${site.host}`);
+}
+
+const CARDS = {
+  business: seedBusiness,
+  personal: seedPersonal,
+  gothic: () =>
+    seedMediaCard({
+      kind: "business",
+      slug: opts.gothic,
+      title: "Мира Чернова",
+      files: DEMO_FILES,
+      ref: demo,
+      folder: "demo",
+      blocks: SAMPLE_GOTHIC_BLOCKS,
+      theme: SAMPLE_GOTHIC_THEME,
+      seo: "Мира Чернова — готическая иллюстрация и тату",
+    }),
+  zxc: () =>
+    seedMediaCard({
+      kind: "personal",
+      slug: opts.zxc,
+      title: "Тёма · 993",
+      files: ZXC_FILES,
+      ref: zxc,
+      folder: "demo/zxc",
+      blocks: SAMPLE_ZXC_BLOCKS,
+      theme: SAMPLE_ZXC_THEME,
+      seo: "Я фотографирую закат · 1000 − 7",
+    }),
+};
+
 async function main() {
+  const wanted = opts.only.split(",").map((name) => name.trim());
+  const unknown = wanted.filter((name) => !(name in CARDS));
+  if (unknown.length) throw new Error(`Unknown cards: ${unknown.join(", ")}`);
   await call("POST", "/api/auth/login", { email: opts.email, password: opts.password });
   console.log(`Signed in as ${opts.email}`);
+  for (const name of wanted) {
+    console.log(`Card: ${name}`);
+    await CARDS[name]();
+  }
+}
 
-  console.log("Business card");
+async function seedBusiness() {
   const business = await recreateSite("business", opts.business, "Анна Волкова");
   const blocks = SAMPLE_BUSINESS_BLOCKS.map((b) =>
     b.type === "hero" ? { ...b, settings: { ...b.settings, pattern: "circuit" } } : b,
@@ -175,8 +233,9 @@ async function main() {
   });
   await call("POST", `/api/sites/${business.id}/publish`);
   console.log(`  published: ${business.host}`);
+}
 
-  console.log("Personal card");
+async function seedPersonal() {
   const ids = await seedCatalog();
   const personal = await recreateSite("personal", opts.personal, "Саша Орлов");
   await call("PUT", `/api/sites/${personal.id}/pages/${personal.pages[0].id}/blocks`, {
@@ -192,19 +251,6 @@ async function main() {
   await call("PATCH", `/api/sites/${personal.id}`, { accent: "#b6ff2e", second: "#ff4f8b" });
   await call("POST", `/api/sites/${personal.id}/publish`);
   console.log(`  published: ${personal.host}`);
-
-  console.log("Gothic card");
-  const files = await uploadDemoFiles();
-  const gothic = await recreateSite("business", opts.gothic, "Мира Чернова");
-  await call("PUT", `/api/sites/${gothic.id}/pages/${gothic.pages[0].id}/blocks`, {
-    blocks: remap(SAMPLE_GOTHIC_BLOCKS, files),
-  });
-  await call("PATCH", `/api/sites/${gothic.id}`, {
-    ...SAMPLE_GOTHIC_THEME,
-    seo_title: "Мира Чернова — готическая иллюстрация и тату",
-  });
-  await call("POST", `/api/sites/${gothic.id}/publish`);
-  console.log(`  published: ${gothic.host}`);
 }
 
 main().catch((error) => {

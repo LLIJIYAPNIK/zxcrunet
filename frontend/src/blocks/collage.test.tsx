@@ -8,6 +8,7 @@ import { autoPhone, bottom, clampPlace, phonePlaces } from "@/lib/collage";
 
 import { Blocks } from "./renderers";
 import { LOOK_BASE, SAMPLE_GOTHIC_BLOCKS } from "./sample-gothic";
+import { SAMPLE_ZXC_BLOCKS } from "./sample-zxc";
 import {
   DEFAULT_APPEARANCE,
   collageSchema,
@@ -163,6 +164,13 @@ describe("gothic sample", () => {
     ) as AnyBlock[];
     for (const b of uploaded) expect(validateBlock(b), b.type).toBeNull();
     expect(LOOK_BASE).toEqual(DEFAULT_APPEARANCE);
+  });
+
+  it("the zxc sample is valid too, on a personal card", () => {
+    const uploaded = JSON.parse(
+      JSON.stringify(SAMPLE_ZXC_BLOCKS).replaceAll('"/demo/zxc/', '"/media/demo/'),
+    ) as AnyBlock[];
+    for (const b of uploaded) expect(validateBlock(b), b.type).toBeNull();
   });
 });
 

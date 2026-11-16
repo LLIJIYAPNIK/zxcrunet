@@ -6,6 +6,7 @@ const PAGES = [
   ["games", "/ui/sample/personal/games", "Игры"],
   ["dark-souls", "/ui/sample/personal/dark-souls", "Dark Souls"],
   ["gothic", "/ui/sample/gothic", "Мира Чернова рисует то, что снится после полуночи"],
+  ["zxc", "/ui/sample/zxc", "Я фотографирую закат"],
 ] as const;
 
 for (const [name, path, heading] of PAGES) {

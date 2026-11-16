@@ -40,8 +40,9 @@ ALL_KINDS: tuple[TitleKind, ...] = ("game", "book", "anime", "series", "film")
 
 # Background decoration of the profile card (hero) and the personal cover (profile).
 Pattern = Literal[
-    "rings", "glow", "dots", "grid", "diagonal", "plus", "waves", "circuit", "topo", "none"
-]
+    "rings", "glow", "dots", "grid", "diagonal", "plus", "waves", "circuit", "topo",
+    "lattice", "arches", "crosses", "stars", "none",
+]  # fmt: skip
 
 
 class InvalidBlockError(InvalidInputError):

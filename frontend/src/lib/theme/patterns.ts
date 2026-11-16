@@ -9,6 +9,10 @@ export const PATTERNS = [
   "waves",
   "circuit",
   "topo",
+  "lattice",
+  "arches",
+  "crosses",
+  "stars",
   "none",
 ] as const;
 

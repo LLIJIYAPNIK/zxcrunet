@@ -6,6 +6,7 @@
 import { z } from "zod";
 
 import type { IconName } from "@/components/ui/Icon";
+import { EMBED_PROVIDERS, PROVIDER_NAMES } from "@/lib/embed";
 import { BODY_FONT_IDS, FONT_IDS } from "@/lib/theme/fonts";
 import { PATTERNS } from "@/lib/theme/patterns";
 
@@ -240,6 +241,73 @@ export const postsSchema = z.object({
   limit: z.number().int().min(1).max(24).default(6),
 });
 
+// --- media blocks (any site) ------------------------------------------------
+
+export const videoRefSchema = mediaRefSchema.extend({
+  url: z.string().regex(/^\/media\/[A-Za-z0-9/_.-]+\.(mp4|webm)$/, "Нужен ролик MP4 или WebM"),
+});
+
+/** A clip or a picture: carousels hold both. */
+export function isVideo(media: { url: string }): boolean {
+  return /\.(mp4|webm)$/i.test(media.url);
+}
+
+export const embedSchema = z
+  .object({
+    provider: z.enum(EMBED_PROVIDERS),
+    id: z.string().max(64),
+    hash: z
+      .string()
+      .regex(/^[0-9a-f]{0,40}$/)
+      .default(""),
+  })
+  .refine(
+    (e) =>
+      ({
+        youtube: /^[A-Za-z0-9_-]{11}$/,
+        vk: /^-?\d{1,20}_\d{1,20}$/,
+        rutube: /^[0-9a-f]{32}$/,
+      })[e.provider].test(e.id),
+    "Ссылка не похожа на видео",
+  );
+
+export const ASPECTS = ["16:9", "9:16", "4:3", "1:1", "21:9"] as const;
+export type Aspect = (typeof ASPECTS)[number];
+
+export const videoSchema = z.object({
+  label: short.default(""),
+  title: line.default(""),
+  lead: text.default(""),
+  source: z.enum(["embed", "file"]).default("embed"),
+  embed: embedSchema.nullable().default(null),
+  file: videoRefSchema.nullable().default(null),
+  poster: mediaRefSchema.nullable().default(null),
+  mode: z.enum(["player", "loop"]).default("player"),
+  aspect: z.enum(ASPECTS).default("16:9"),
+});
+
+export const carouselSchema = z.object({
+  label: short.default(""),
+  title: line.default(""),
+  items: z
+    .array(
+      z.object({
+        media: mediaRefSchema,
+        alt: short.default(""),
+        link: linkSchema.nullable().default(null),
+      }),
+    )
+    .max(30)
+    .default([]),
+  mode: z.enum(["slides", "marquee"]).default("slides"),
+  autoplay: z.boolean().default(true),
+  interval: z.number().int().min(2).max(15).default(5),
+  speed: z.number().int().min(10).max(120).default(40),
+  direction: z.enum(["left", "right"]).default("left"),
+  height: z.enum(["s", "m", "l"]).default("m"),
+  pause_on_hover: z.boolean().default(true),
+});
+
 // --- section appearance (any block; mirror of backend `Appearance`) ------------
 
 const hex = z
@@ -255,6 +323,7 @@ export const SECTION_BACKGROUNDS = [
   "color",
   "gradient",
   "image",
+  "video",
   "pattern",
 ] as const;
 export const SECTION_SPACES = ["none", "s", "m", "l"] as const;
@@ -266,6 +335,7 @@ export const appearanceSchema = z.object({
   color2: hex.default("#05070b"),
   angle: z.number().int().min(0).max(360).default(180),
   image: mediaRefSchema.nullable().default(null),
+  video: videoRefSchema.nullable().default(null),
   dim: z.number().int().min(0).max(90).default(45),
   pattern: z.enum(PATTERNS).default("dots"),
   space: z.enum(SECTION_SPACES).default("none"),
@@ -294,6 +364,8 @@ export const SCHEMAS = {
   quotes: quotesSchema,
   playlist: playlistSchema,
   posts: postsSchema,
+  video: videoSchema,
+  carousel: carouselSchema,
 } as const;
 
 export type BlockType = keyof typeof SCHEMAS;
@@ -484,6 +556,34 @@ export const META: { [T in BlockType]: BlockMeta & { type: T } } = {
       s.kind === "all" ? "все посты" : s.kind === "review" ? "рецензии" : "заметки",
     navLabel: (s: SettingsOf<"posts">) => s.title || "Посты",
   },
+  video: {
+    type: "video",
+    title: "Видео",
+    description: "Ролик с YouTube, VK Видео или Rutube либо свой клип: плеер или беззвучная петля.",
+    icon: "play",
+    kinds: ["business", "personal"],
+    summary: (s: SettingsOf<"video">) =>
+      s.source === "embed"
+        ? s.embed
+          ? PROVIDER_NAMES[s.embed.provider]
+          : "ссылка не указана"
+        : s.file
+          ? s.mode === "loop"
+            ? "свой клип, петля"
+            : "свой клип"
+          : "файл не загружен",
+    navLabel: (s: SettingsOf<"video">) => s.title || null,
+  },
+  carousel: {
+    type: "carousel",
+    title: "Карусель",
+    description: "Картинки и клипы по кругу: слайды или бегущая лента.",
+    icon: "layers",
+    kinds: ["business", "personal"],
+    summary: (s: SettingsOf<"carousel">) =>
+      `${s.items.length} ${s.mode === "marquee" ? "в ленте" : "слайдов"}`,
+    navLabel: (s: SettingsOf<"carousel">) => s.title || null,
+  },
 };
 
 export const KIND_TITLES: Record<(typeof TITLE_KINDS)[number], string> = {
@@ -569,6 +669,8 @@ export function defaultSettings<T extends BlockType>(type: T, siteTitle: string)
       items: [{ track: "", artist: "", title_id: null, url: null }],
     },
     posts: postsSchema.parse({ label: "Лента", title: "Посты" }),
+    video: videoSchema.parse({}),
+    carousel: carouselSchema.parse({}),
   };
   return defaults[type] as SettingsOf<T>;
 }

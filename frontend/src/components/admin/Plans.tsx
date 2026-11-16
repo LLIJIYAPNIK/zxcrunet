@@ -20,6 +20,7 @@ const LIMITS = [
   ["max_sites", t.maxSites, 0, 1000],
   ["max_custom_domains", t.maxDomains, 0, 1000],
   ["max_upload_mb", t.maxUpload, 1, 100],
+  ["max_video_mb", t.maxVideo, 1, 100],
 ] as const;
 
 function PlanFields({ value, onChange }: { value: Limits; onChange: (value: Limits) => void }) {
@@ -73,6 +74,7 @@ function PlanCard({ plan, onSaved }: { plan: AdminPlan; onSaved: (plan: AdminPla
         max_sites: value.max_sites,
         max_custom_domains: value.max_custom_domains,
         max_upload_mb: value.max_upload_mb,
+        max_video_mb: value.max_video_mb,
       },
     });
     setBusy(false);
@@ -97,7 +99,13 @@ function PlanCard({ plan, onSaved }: { plan: AdminPlan; onSaved: (plan: AdminPla
   );
 }
 
-const EMPTY: Limits = { title: "", max_sites: 3, max_custom_domains: 3, max_upload_mb: 10 };
+const EMPTY: Limits = {
+  title: "",
+  max_sites: 3,
+  max_custom_domains: 3,
+  max_upload_mb: 10,
+  max_video_mb: 15,
+};
 
 export function PlansAdmin() {
   const { data, setData, error } = useAdminData(() => api.get("/api/admin/plans"), "plans");

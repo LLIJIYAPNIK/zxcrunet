@@ -12,6 +12,7 @@ import { ru } from "@/i18n/ru";
 import { cn } from "@/lib/cn";
 
 import { SectionFrame } from "./appearance";
+import { MEDIA_RENDERERS } from "./media";
 import { PERSONAL_RENDERERS } from "./personal";
 import { anchorId, type AnyBlock, type ContactKind } from "./schemas";
 import {
@@ -360,6 +361,7 @@ const RENDERERS: { [T in AnyBlock["type"]]: (props: Props<T>) => ReactNode } = {
   contacts: Contacts,
   resume: Resume,
   ...PERSONAL_RENDERERS,
+  ...MEDIA_RENDERERS,
 };
 
 /** Renders visible blocks; a block that fails to render never breaks the page. */

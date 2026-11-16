@@ -220,3 +220,30 @@
 [data-style="gothic"] ::selection {
   background: color-mix(in srgb, var(--accent) 45%, transparent);
 }
+
+/* Бегущая лента карусели (components/public/Carousel.tsx). */
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee-track {
+  animation: marquee var(--marquee-duration, 40s) linear infinite;
+}
+
+[data-direction="right"] .marquee-track {
+  animation-direction: reverse;
+}
+
+[data-pause-hover]:hover .marquee-track,
+[data-marquee]:focus-within .marquee-track {
+  animation-play-state: paused;
+}
+
+/* Без анимации лента стоит, и её можно прокрутить. */
+@media (prefers-reduced-motion: reduce) {
+  [data-marquee] {
+    overflow-x: auto;
+  }
+}

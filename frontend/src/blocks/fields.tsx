@@ -513,18 +513,24 @@ export function NumberField<N extends number | null>({
   );
 }
 
-/** A 0–100 slider with the current value next to the label. */
+/** A slider (0–100% by default) with the current value next to it. */
 export function RangeField({
   label,
   value,
   onChange,
   step = 5,
+  min = 0,
+  max = 100,
+  unit = "%",
   hint,
 }: {
   label: string;
   value: number;
   onChange: (value: number) => void;
   step?: number;
+  min?: number;
+  max?: number;
+  unit?: string;
   hint?: string;
 }) {
   return (
@@ -534,8 +540,8 @@ export function RangeField({
           <input
             id={id}
             type="range"
-            min={0}
-            max={100}
+            min={min}
+            max={max}
             step={step}
             value={value}
             aria-describedby={describedBy}
@@ -543,7 +549,8 @@ export function RangeField({
             className="h-12 min-w-0 flex-1 accent-(--accent)"
           />
           <output htmlFor={id} className="w-12 text-right font-mono text-sm text-ink-2">
-            {value}%
+            {value}
+            {unit}
           </output>
         </span>
       )}

@@ -1130,7 +1130,7 @@ export interface components {
              * @default dots
              * @enum {string}
              */
-            pattern: "rings" | "glow" | "dots" | "grid" | "diagonal" | "plus" | "waves" | "circuit" | "topo" | "none";
+            pattern: "rings" | "glow" | "dots" | "grid" | "diagonal" | "plus" | "waves" | "circuit" | "topo" | "lattice" | "arches" | "crosses" | "stars" | "none";
             /**
              * Space
              * @default none

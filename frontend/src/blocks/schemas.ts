@@ -6,6 +6,7 @@
 import { z } from "zod";
 
 import type { IconName } from "@/components/ui/Icon";
+import { BODY_FONT_IDS, FONT_IDS } from "@/lib/theme/fonts";
 import { PATTERNS } from "@/lib/theme/patterns";
 
 const SAFE_URL = /^(https?:\/\/|mailto:|tel:|tg:\/\/|#)[^\s<>"']*$/i;
@@ -239,6 +240,42 @@ export const postsSchema = z.object({
   limit: z.number().int().min(1).max(24).default(6),
 });
 
+// --- section appearance (any block; mirror of backend `Appearance`) ------------
+
+const hex = z
+  .string()
+  .trim()
+  .regex(/^#[0-9a-fA-F]{6}$/, "Цвет в формате #rrggbb")
+  .transform((v) => v.toLowerCase());
+
+export const SECTION_BACKGROUNDS = [
+  "none",
+  "surface",
+  "accent",
+  "color",
+  "gradient",
+  "image",
+  "pattern",
+] as const;
+export const SECTION_SPACES = ["none", "s", "m", "l"] as const;
+export const SECTION_DIVIDERS = ["none", "line", "ornament"] as const;
+
+export const appearanceSchema = z.object({
+  background: z.enum(SECTION_BACKGROUNDS).default("none"),
+  color: hex.default("#121722"),
+  color2: hex.default("#05070b"),
+  angle: z.number().int().min(0).max(360).default(180),
+  image: mediaRefSchema.nullable().default(null),
+  dim: z.number().int().min(0).max(90).default(45),
+  pattern: z.enum(PATTERNS).default("dots"),
+  space: z.enum(SECTION_SPACES).default("none"),
+  divider: z.enum(SECTION_DIVIDERS).default("none"),
+  heading_font: z.enum(["", ...FONT_IDS]).default(""),
+  body_font: z.enum(["", ...BODY_FONT_IDS]).default(""),
+});
+export type Appearance = z.output<typeof appearanceSchema>;
+export const DEFAULT_APPEARANCE: Appearance = appearanceSchema.parse({});
+
 export const SCHEMAS = {
   hero: heroSchema,
   facts: factsSchema,
@@ -269,6 +306,8 @@ export type BlockData<T extends BlockType = BlockType> = {
   hidden: boolean;
   /** May be incomplete while the user is typing; validated before saving. */
   settings: SettingsOf<T>;
+  /** How the section looks; absent means «as the style draws it». */
+  appearance?: Appearance | null;
 };
 
 export type AnyBlock = { [T in BlockType]: BlockData<T> }[BlockType];
@@ -536,7 +575,21 @@ export function defaultSettings<T extends BlockType>(type: T, siteTitle: string)
 
 export function validateBlock(block: AnyBlock): z.ZodError | null {
   const result = SCHEMAS[block.type].safeParse(block.settings);
-  return result.success ? null : result.error;
+  if (!result.success) return result.error;
+  if (block.appearance) {
+    const look = appearanceSchema.safeParse(block.appearance);
+    if (!look.success) return look.error;
+  }
+  return null;
+}
+
+/** Appearance worth storing: null when every field is the default. */
+export function cleanAppearance(value: Appearance | null | undefined): Appearance | null {
+  if (!value) return null;
+  const same = (Object.keys(DEFAULT_APPEARANCE) as (keyof Appearance)[]).every(
+    (key) => JSON.stringify(value[key]) === JSON.stringify(DEFAULT_APPEARANCE[key]),
+  );
+  return same ? null : value;
 }
 
 /** Anchor id of a block section: stable across renders, short in the URL. */

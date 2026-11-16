@@ -27,6 +27,12 @@ export const PRESETS: readonly PalettePreset[] = [
   { id: "coral", name: "Коралл", accent: "#ff8a65", second: "#4dd0e1" },
   { id: "toxic", name: "Токсик", accent: "#39ff14", second: "#ff3df0" },
   { id: "mono", name: "Монохром", accent: "#e9edf3", second: "#5ab9fc" },
+  // Gothic: deep, low-glow colours.
+  { id: "blood", name: "Кровь", accent: "#f0283f", second: "#d4af37" },
+  { id: "bone", name: "Кость", accent: "#e3dccb", second: "#ea2d4e" },
+  { id: "amethyst", name: "Аметист", accent: "#a257df", second: "#c9c9d1" },
+  { id: "absinthe", name: "Абсент", accent: "#7fb800", second: "#a257df" },
+  { id: "candle", name: "Свеча", accent: "#e8a33d", second: "#e53b40" },
 ];
 
 export const DEFAULT_PRESET = PRESETS[0];
@@ -69,14 +75,27 @@ function pickInk(accent: string): string {
   return contrast(accent, INK_DARK) >= contrast(accent, INK_LIGHT) ? INK_DARK : INK_LIGHT;
 }
 
-export function derivePalette(accentInput: string, secondInput?: string): Palette {
+/** Background tints and glow strength per card style: gothic is darker and barely glows. */
+const GROUNDS = {
+  neon: { bg: [28, 4.6], surface: [24, 8.4], raised: [20, 12], glow: 0.38 },
+  gothic: { bg: [14, 3.6], surface: [12, 7.4], raised: [10, 10.8], glow: 0.2 },
+} as const;
+
+export type PaletteStyle = keyof typeof GROUNDS;
+
+export function derivePalette(
+  accentInput: string,
+  secondInput?: string,
+  style: PaletteStyle = "neon",
+): Palette {
   const raw = normalizeHex(accentInput);
   const { h } = rgbToHsl(hexToRgb(raw));
   const tint = safeHue(Math.round(h));
+  const ground = GROUNDS[style];
 
-  const bg = hslToHex({ h: tint, s: 28, l: 4.6 });
-  const surface = hslToHex({ h: tint, s: 24, l: 8.4 });
-  const raised = hslToHex({ h: tint, s: 20, l: 12 });
+  const bg = hslToHex({ h: tint, s: ground.bg[0], l: ground.bg[1] });
+  const surface = hslToHex({ h: tint, s: ground.surface[0], l: ground.surface[1] });
+  const raised = hslToHex({ h: tint, s: ground.raised[0], l: ground.raised[1] });
 
   const accent = ensureContrast(raw, bg, MIN_ACCENT_CONTRAST);
   const secondRaw = secondInput
@@ -92,7 +111,7 @@ export function derivePalette(accentInput: string, secondInput?: string): Palett
     bg,
     surface,
     raised,
-    glow: `rgba(${r}, ${g}, ${b}, 0.38)`,
+    glow: `rgba(${r}, ${g}, ${b}, ${ground.glow})`,
   };
 }
 

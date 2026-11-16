@@ -557,6 +557,10 @@
               "waves",
               "circuit",
               "topo",
+              "lattice",
+              "arches",
+              "crosses",
+              "stars",
               "none"
             ],
             "title": "Pattern",

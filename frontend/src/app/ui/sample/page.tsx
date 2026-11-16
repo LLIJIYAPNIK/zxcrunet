@@ -19,7 +19,13 @@ export default function SamplePage() {
       content={{
         kind: "business",
         title: "Анна Волкова",
-        theme: { accent: "#5ab9fc", second: "#ffb545" },
+        theme: {
+          accent: "#5ab9fc",
+          second: "#ffb545",
+          style: "neon",
+          heading_font: "",
+          body_font: "",
+        },
         seo: { title: "", description: "" },
         pages: [{ path: "", title: "Анна Волкова", blocks }],
       }}

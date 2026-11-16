@@ -5,7 +5,7 @@ import { TitlePage } from "@/components/catalog/TitlePage";
 import { META, anchorId, type AnyBlock } from "@/blocks/schemas";
 import { MadeWith } from "@/components/brand/MadeWith";
 import { ReportButton, ViewBeacon } from "@/components/public/SiteEvents";
-import { ThemeScope } from "@/components/theme/ThemeScope";
+import { SiteScope } from "@/components/public/SiteScope";
 import { SERVICE_DOMAIN } from "@/config/site";
 import { cn } from "@/lib/cn";
 import type { Schemas } from "@/lib/api/client";
@@ -86,9 +86,8 @@ export function PublicSite({
   const index = new CatalogIndex(catalog);
 
   return (
-    <ThemeScope
-      accent={content.theme.accent}
-      second={content.theme.second ?? undefined}
+    <SiteScope
+      theme={content.theme}
       className="@container flex min-h-full flex-1 flex-col bg-bg text-ink"
     >
       <header className="border-b border-line">
@@ -175,6 +174,6 @@ export function PublicSite({
           </span>
         </div>
       </footer>
-    </ThemeScope>
+    </SiteScope>
   );
 }

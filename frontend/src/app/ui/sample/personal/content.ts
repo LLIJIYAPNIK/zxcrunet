@@ -6,7 +6,13 @@ const games = SAMPLE_GAMES_BLOCKS as unknown as Record<string, unknown>[];
 export const SAMPLE_PERSONAL_CONTENT = {
   kind: "personal" as const,
   title: "Саша Орлов",
-  theme: { accent: "#b6ff2e", second: "#ff4f8b" },
+  theme: {
+    accent: "#b6ff2e",
+    second: "#ff4f8b",
+    style: "neon" as const,
+    heading_font: "" as const,
+    body_font: "" as const,
+  },
   seo: { title: "", description: "" },
   pages: [
     { path: "", title: "Саша Орлов", blocks: home },

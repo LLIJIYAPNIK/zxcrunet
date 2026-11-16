@@ -135,3 +135,49 @@ test("invalid block pauses autosave until fixed", async ({ page }) => {
   await field(page, "Шапка", "Заголовок").fill("Снова есть заголовок");
   await saved(page);
 });
+
+test("gothic style, fonts and a section background reach the public card", async ({ page }) => {
+  await registerVerified(page, "gothic");
+  const slug = `g-${Date.now().toString(36)}`;
+  await page.goto(`${APP}/app/sites/new`);
+  await page.getByLabel("Название").filter({ visible: true }).fill("Готика");
+  await page.getByLabel("Адрес").filter({ visible: true }).fill(slug);
+  await expect(page.getByText("Адрес свободен")).toBeVisible();
+  await page.getByRole("button", { name: "Создать", exact: true }).click();
+  await page.getByRole("link", { name: "Конструктор" }).click();
+
+  await addBlock(page, "Шапка");
+  await field(page, "Шапка", "Заголовок").fill("Тень и пламя");
+  const section = page.getByRole("region", { name: "Шапка", exact: true });
+  await section
+    .getByRole("radiogroup", { name: "Фон" })
+    .getByRole("radio", { name: "Узор" })
+    .click();
+  await section.getByRole("radio", { name: "Арки" }).click();
+  await section.getByRole("radio", { name: "Орнамент" }).click();
+  await saved(page);
+
+  await page.getByRole("button", { name: "Дизайн", exact: true }).click();
+  await page.getByRole("radio", { name: /^Готика/ }).click();
+  await page.getByRole("button", { name: /Как в стиле: Cormorant/ }).click();
+  await page.getByRole("radio", { name: /^Ruslan Display/ }).click();
+  await saved(page);
+
+  const preview = page.getByTestId("builder-preview");
+  await expect(preview.locator("[data-style='gothic']")).toHaveCount(1);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.screenshot({ path: `${SHOTS}/builder-design-1440.png`, fullPage: true });
+
+  await page.getByRole("button", { name: "Опубликовать", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "опубликовано" })).toBeVisible();
+
+  await page.goto(`http://${slug}.localhost:${PORT}`);
+  const root = page.locator("[data-site]");
+  await expect(root).toHaveAttribute("data-style", "gothic");
+  await expect(root).toHaveAttribute("style", /--site-display: var\(--ff-ruslan\)/);
+  await expect(
+    page.locator("[data-section][data-background='pattern'] [data-ornament]"),
+  ).toHaveCount(1);
+  await expect(page.locator('[data-pattern="arches"]')).toHaveCount(1);
+  await page.screenshot({ path: `${SHOTS}/public-gothic-1440.png`, fullPage: true });
+});

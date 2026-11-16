@@ -6,6 +6,7 @@ import { Segmented } from "@/components/ui/Segmented";
 import { Switch } from "@/components/ui/Switch";
 import { cn } from "@/lib/cn";
 import { PRESETS, derivePalette, type PalettePreset } from "@/lib/theme/palette";
+import { STYLES, type SiteStyle } from "@/lib/theme/styles";
 import { ru } from "@/i18n/ru";
 
 import { ColorPicker } from "./ColorPicker";
@@ -35,15 +36,33 @@ type PalettePickerProps = {
   onChange: (choice: PaletteChoice) => void;
   /** Compact: dots only, no names, no custom colour. */
   compact?: boolean;
+  /** Card style: its palettes come first, contrast is checked against its grounds. */
+  look?: SiteStyle;
   className?: string;
 };
 
 type Target = "accent" | "second";
 
-export function PalettePicker({ value, onChange, compact = false, className }: PalettePickerProps) {
+/** Presets with the style's own palettes first. */
+function presetsFor(look: SiteStyle | undefined): readonly PalettePreset[] {
+  if (!look) return PRESETS;
+  const first: readonly string[] = STYLES[look].presets;
+  return [
+    ...PRESETS.filter((p) => first.includes(p.id)),
+    ...PRESETS.filter((p) => !first.includes(p.id)),
+  ];
+}
+
+export function PalettePicker({
+  value,
+  onChange,
+  compact = false,
+  look,
+  className,
+}: PalettePickerProps) {
   const t = ru.palette;
   const [target, setTarget] = useState<Target>("accent");
-  const derived = derivePalette(value.accent, value.second);
+  const derived = derivePalette(value.accent, value.second, look);
   const autoSecond = value.second === undefined;
 
   return (
@@ -53,7 +72,7 @@ export function PalettePicker({ value, onChange, compact = false, className }: P
         aria-label={t.presetsLabel}
         className={cn("grid gap-2", compact ? "grid-cols-8" : "grid-cols-3 sm:grid-cols-5")}
       >
-        {PRESETS.map((preset) => {
+        {presetsFor(look).map((preset) => {
           const selected = value.presetId === preset.id;
           return (
             <button

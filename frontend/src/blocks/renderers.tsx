@@ -11,6 +11,7 @@ import { Icon, type IconName } from "@/components/ui/Icon";
 import { ru } from "@/i18n/ru";
 import { cn } from "@/lib/cn";
 
+import { SectionFrame } from "./appearance";
 import { PERSONAL_RENDERERS } from "./personal";
 import { anchorId, type AnyBlock, type ContactKind } from "./schemas";
 import {
@@ -370,7 +371,9 @@ export function Blocks({ blocks, ctx }: { blocks: readonly AnyBlock[]; ctx: Rend
         .map((block) => {
           const Render = RENDERERS[block.type] as (props: Props<typeof block.type>) => ReactNode;
           return Render ? (
-            <Render key={block.id} id={anchorId(block)} settings={block.settings} ctx={ctx} />
+            <SectionFrame key={block.id} appearance={block.appearance}>
+              <Render id={anchorId(block)} settings={block.settings} ctx={ctx} />
+            </SectionFrame>
           ) : null;
         })}
     </>

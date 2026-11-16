@@ -66,11 +66,11 @@ export function PalettePicker({
   const autoSecond = value.second === undefined;
 
   return (
-    <div className={cn("flex flex-col gap-5", className)}>
+    <div className={cn("@container flex flex-col gap-5", className)}>
       <div
         role="radiogroup"
         aria-label={t.presetsLabel}
-        className={cn("grid gap-2", compact ? "grid-cols-8" : "grid-cols-3 sm:grid-cols-5")}
+        className={cn("grid gap-2", compact ? "grid-cols-8" : "grid-cols-3 @md:grid-cols-5")}
       >
         {presetsFor(look).map((preset) => {
           const selected = value.presetId === preset.id;

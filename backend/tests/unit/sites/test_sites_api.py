@@ -66,7 +66,39 @@ async def test_create_publish_and_resolve(client: AsyncClient, fakes: Fakes) -> 
     resolved = await client.get("/api/public/sites/resolve", params={"host": "anna.localhost"})
     assert resolved.status_code == 200
     assert resolved.json()["content"]["title"] == "Анна Волкова"
-    assert resolved.json()["content"]["theme"] == {"accent": "#5ab9fc", "second": "#ffb545"}
+    assert resolved.json()["content"]["theme"] == {
+        "accent": "#5ab9fc",
+        "second": "#ffb545",
+        "style": "neon",
+        "heading_font": "",
+        "body_font": "",
+    }
+
+
+async def test_style_and_fonts(client: AsyncClient, fakes: Fakes) -> None:
+    await signed_in(client, fakes)
+    site_id = (
+        await client.post("/api/sites", json={"kind": "personal", "slug": "anna", "title": "А"})
+    ).json()["id"]
+
+    styled = await client.patch(
+        f"/api/sites/{site_id}",
+        json={"style": "gothic", "heading_font": "ruslan", "body_font": "lora"},
+    )
+    assert styled.status_code == 200
+    assert styled.json()["theme"]["style"] == "gothic"
+    assert styled.json()["theme"]["heading_font"] == "ruslan"
+
+    recoloured = await client.patch(f"/api/sites/{site_id}", json={"accent": "#ff4f8b"})
+    assert recoloured.json()["theme"]["style"] == "gothic"
+    assert recoloured.json()["theme"]["accent"] == "#ff4f8b"
+
+    reset = await client.patch(f"/api/sites/{site_id}", json={"heading_font": ""})
+    assert reset.json()["theme"]["heading_font"] == ""
+    assert reset.json()["theme"]["body_font"] == "lora"
+
+    for body in ({"style": "baroque"}, {"body_font": "ruslan"}, {"heading_font": "arial"}):
+        assert (await client.patch(f"/api/sites/{site_id}", json=body)).status_code == 422
 
 
 async def test_publish_without_verified_email_is_403(client: AsyncClient, fakes: Fakes) -> None:

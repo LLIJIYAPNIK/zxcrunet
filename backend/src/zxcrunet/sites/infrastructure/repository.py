@@ -11,7 +11,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from zxcrunet.sites.application.use_cases import ResolvedSite
 from zxcrunet.sites.domain.errors import SlugTakenError
 from zxcrunet.sites.domain.repository import ReservedName, SiteFilter
-from zxcrunet.sites.domain.site import Page, Site, SiteKind, SiteStatus, Slug, Theme
+from zxcrunet.sites.domain.site import (
+    Page,
+    Site,
+    SiteKind,
+    SiteStatus,
+    SiteStyle,
+    Slug,
+    Theme,
+)
 from zxcrunet.sites.infrastructure.models import PageModel, ReservedSlugModel, SiteModel
 
 
@@ -22,7 +30,13 @@ def _to_domain(row: SiteModel) -> Site:
         kind=SiteKind(row.kind),
         slug=Slug(row.slug),
         title=row.title,
-        theme=Theme(accent=row.theme_accent, second=row.theme_second),
+        theme=Theme(
+            accent=row.theme_accent,
+            second=row.theme_second,
+            style=SiteStyle(row.theme_style),
+            heading_font=row.theme_heading_font,
+            body_font=row.theme_body_font,
+        ),
         status=SiteStatus(row.status),
         seo_title=row.seo_title,
         seo_description=row.seo_description,
@@ -51,6 +65,9 @@ def _apply(row: SiteModel, site: Site) -> None:
     row.title = site.title
     row.theme_accent = site.theme.accent
     row.theme_second = site.theme.second
+    row.theme_style = site.theme.style.value
+    row.theme_heading_font = site.theme.heading_font
+    row.theme_body_font = site.theme.body_font
     row.status = site.status.value
     row.seo_title = site.seo_title
     row.seo_description = site.seo_description

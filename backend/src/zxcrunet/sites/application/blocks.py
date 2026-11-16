@@ -48,6 +48,47 @@ class InvalidBlockError(InvalidInputError):
     code = "invalid_block"
 
 
+# --- section appearance (any block) -------------------------------------------
+
+#: Mirror of `sites.domain.site.FONTS` (a unit test keeps them equal).
+FontId = Literal[
+    "onest", "inter", "manrope", "golos", "unbounded", "russo", "dela-gothic", "tektur",
+    "cormorant", "playfair", "eb-garamond", "lora", "pt-serif", "old-standard", "yeseva",
+    "prata", "ruslan", "monomakh", "rubik-glitch", "rubik-wet-paint", "caveat", "marck",
+    "jetbrains", "ibm-plex-mono", "press-start", "pixelify", "poiret",
+]  # fmt: skip
+#: Mirror of `sites.domain.site.BODY_FONTS`.
+BodyFontId = Literal[
+    "onest", "inter", "manrope", "golos", "cormorant", "eb-garamond", "lora", "pt-serif",
+    "old-standard", "jetbrains", "ibm-plex-mono",
+]  # fmt: skip
+Hex = Annotated[
+    str, StringConstraints(strip_whitespace=True, to_lower=True, pattern=r"^#[0-9a-fA-F]{6}$")
+]
+SectionBackground = Literal["none", "surface", "accent", "color", "gradient", "image", "pattern"]
+SectionSpace = Literal["none", "s", "m", "l"]
+SectionDivider = Literal["none", "line", "ornament"]
+
+
+class Appearance(_Model):
+    """How a section looks around its content: background, room, divider, fonts."""
+
+    background: SectionBackground = "none"
+    #: `color`: the fill; `gradient`: from `color` to `color2` at `angle` degrees.
+    color: Hex = "#121722"
+    color2: Hex = "#05070b"
+    angle: int = Field(default=180, ge=0, le=360)
+    image: MediaRef | None = None
+    #: Darkening over the image, in percent, so the text stays readable.
+    dim: int = Field(default=45, ge=0, le=90)
+    pattern: Pattern = "dots"
+    space: SectionSpace = "none"
+    divider: SectionDivider = "none"
+    #: Empty: the site's fonts.
+    heading_font: FontId | Literal[""] = ""
+    body_font: BodyFontId | Literal[""] = ""
+
+
 # --- business blocks ----------------------------------------------------------
 
 
@@ -299,6 +340,7 @@ class BlockIn(BaseModel):
     version: int = Field(default=1, ge=1)
     hidden: bool = False
     settings: dict[str, Any]
+    appearance: Appearance | None = None
 
 
 def _errors(exc: ValidationError) -> list[dict[str, Any]]:
@@ -344,18 +386,19 @@ def validate_blocks(blocks: list[BlockIn], site_kind: str | None = None) -> list
                 "Block settings are invalid",
                 {"index": index, "type": block.type, "errors": _errors(exc)},
             ) from exc
-        result.append(
-            {
-                "id": str(block.id),
-                "type": block.type,
-                "version": block.version,
-                "hidden": block.hidden,
-                "settings": settings.model_dump(mode="json"),
-            }
-        )
+        stored: dict[str, Any] = {
+            "id": str(block.id),
+            "type": block.type,
+            "version": block.version,
+            "hidden": block.hidden,
+            "settings": settings.model_dump(mode="json"),
+        }
+        if block.appearance is not None and block.appearance != Appearance():
+            stored["appearance"] = block.appearance.model_dump(mode="json")
+        result.append(stored)
     return result
 
 
 def media_ids(blocks: list[dict[str, Any]]) -> set[UUID]:
     """Every uploaded file a list of validated blocks refers to."""
-    return _media_ids([b["settings"] for b in blocks])
+    return _media_ids([[b["settings"], b.get("appearance")] for b in blocks])

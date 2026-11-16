@@ -12,7 +12,7 @@ from zxcrunet.shared.domain.errors import AppError
 from zxcrunet.sites.application.blocks import BlockIn, media_ids, validate_blocks
 from zxcrunet.sites.domain.errors import SiteNotFoundError, SlugReservedError, SlugTakenError
 from zxcrunet.sites.domain.repository import ReservedSlugs, SiteRepository
-from zxcrunet.sites.domain.site import Page, Site, SiteKind, SiteStatus, Slug, Theme
+from zxcrunet.sites.domain.site import Page, Site, SiteKind, SiteStatus, SiteStyle, Slug
 
 
 @dataclass(frozen=True, slots=True)
@@ -191,6 +191,9 @@ class SiteChanges:
     slug: str | None = None
     accent: str | None = None
     second: str | None = None
+    style: str | None = None
+    heading_font: str | None = None
+    body_font: str | None = None
     seo_title: str | None = None
     seo_description: str | None = None
 
@@ -208,8 +211,17 @@ class UpdateSite(_Base):
                 await self._ensure_slug_free(slug)
                 stale = (site.slug, slug)
                 site.change_slug(slug, now)
+        theme = site.theme
         if changes.accent is not None:
-            site.set_theme(Theme.parse(changes.accent, changes.second), now)
+            theme = theme.with_colors(changes.accent, changes.second)
+        if (changes.style, changes.heading_font, changes.body_font) != (None, None, None):
+            theme = theme.with_look(
+                SiteStyle(changes.style) if changes.style is not None else theme.style,
+                changes.heading_font if changes.heading_font is not None else theme.heading_font,
+                changes.body_font if changes.body_font is not None else theme.body_font,
+            )
+        if theme != site.theme:
+            site.set_theme(theme, now)
         if changes.seo_title is not None or changes.seo_description is not None:
             site.set_seo(
                 changes.seo_title if changes.seo_title is not None else site.seo_title,

@@ -14,7 +14,7 @@ from zxcrunet.sites.domain.errors import (
     SiteSuspendedError,
     TitleRequiredError,
 )
-from zxcrunet.sites.domain.site import Site, SiteKind, SiteStatus, Slug, Theme
+from zxcrunet.sites.domain.site import Site, SiteKind, SiteStatus, SiteStyle, Slug, Theme
 
 NOW = datetime(2026, 11, 12, tzinfo=UTC)
 
@@ -141,3 +141,36 @@ def test_home_page_cannot_be_removed_or_moved() -> None:
 def test_foreign_site_looks_missing() -> None:
     with pytest.raises(SiteNotFoundError):
         make_site().ensure_owned_by(uuid4())
+
+
+def test_theme_look_keeps_colours_and_checks_fonts() -> None:
+    theme = Theme.parse("#ff4f8b", None).with_look(SiteStyle.GOTHIC, "ruslan", "lora")
+
+    assert (theme.accent, theme.style, theme.heading_font, theme.body_font) == (
+        "#ff4f8b",
+        SiteStyle.GOTHIC,
+        "ruslan",
+        "lora",
+    )
+    assert theme.with_colors("#00E5FF", "#FFB545").style == SiteStyle.GOTHIC
+    assert theme.with_look(SiteStyle.NEON, "", "").heading_font == ""
+    with pytest.raises(InvalidThemeError):
+        theme.with_look(SiteStyle.GOTHIC, "comic-sans", "")
+    with pytest.raises(InvalidThemeError):
+        # A display face is not offered for body text.
+        theme.with_look(SiteStyle.GOTHIC, "", "ruslan")
+
+
+def test_snapshot_carries_the_style_and_fonts() -> None:
+    site = make_site()
+    site.set_theme(site.theme.with_look(SiteStyle.GOTHIC, "cormorant", ""), NOW)
+    site.publish(NOW, owner_email_verified=True)
+
+    assert site.published is not None
+    assert site.published["theme"] == {
+        "accent": site.theme.accent,
+        "second": site.theme.second,
+        "style": "gothic",
+        "heading_font": "cormorant",
+        "body_font": "",
+    }

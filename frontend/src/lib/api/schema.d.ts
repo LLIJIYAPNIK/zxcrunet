@@ -1077,6 +1077,67 @@ export interface components {
             /** Total */
             total: number;
         };
+        /**
+         * Appearance
+         * @description How a section looks around its content: background, room, divider, fonts.
+         */
+        Appearance: {
+            /**
+             * Angle
+             * @default 180
+             */
+            angle: number;
+            /**
+             * Background
+             * @default none
+             * @enum {string}
+             */
+            background: "none" | "surface" | "accent" | "color" | "gradient" | "image" | "pattern";
+            /**
+             * Body Font
+             * @default
+             */
+            body_font: ("onest" | "inter" | "manrope" | "golos" | "cormorant" | "eb-garamond" | "lora" | "pt-serif" | "old-standard" | "jetbrains" | "ibm-plex-mono") | "";
+            /**
+             * Color
+             * @default #121722
+             */
+            color: string;
+            /**
+             * Color2
+             * @default #05070b
+             */
+            color2: string;
+            /**
+             * Dim
+             * @default 45
+             */
+            dim: number;
+            /**
+             * Divider
+             * @default none
+             * @enum {string}
+             */
+            divider: "none" | "line" | "ornament";
+            /**
+             * Heading Font
+             * @default
+             */
+            heading_font: ("onest" | "inter" | "manrope" | "golos" | "unbounded" | "russo" | "dela-gothic" | "tektur" | "cormorant" | "playfair" | "eb-garamond" | "lora" | "pt-serif" | "old-standard" | "yeseva" | "prata" | "ruslan" | "monomakh" | "rubik-glitch" | "rubik-wet-paint" | "caveat" | "marck" | "jetbrains" | "ibm-plex-mono" | "press-start" | "pixelify" | "poiret") | "";
+            image?: components["schemas"]["MediaRef"] | null;
+            /**
+             * Pattern
+             * @default dots
+             * @enum {string}
+             */
+            pattern: "rings" | "glow" | "dots" | "grid" | "diagonal" | "plus" | "waves" | "circuit" | "topo" | "none";
+            /**
+             * Space
+             * @default none
+             * @enum {string}
+             */
+            space: "none" | "s" | "m" | "l";
+        };
         /** AuditOut */
         AuditOut: {
             /** Action */
@@ -1119,6 +1180,7 @@ export interface components {
          * @description Envelope the editor sends; `settings` is checked against the type's schema.
          */
         BlockIn: {
+            appearance?: components["schemas"]["Appearance"] | null;
             /**
              * Hidden
              * @default false
@@ -1146,6 +1208,7 @@ export interface components {
         };
         /** BlockOut */
         BlockOut: {
+            appearance?: components["schemas"]["Appearance"] | null;
             /** Hidden */
             hidden: boolean;
             /**
@@ -2035,8 +2098,24 @@ export interface components {
         ThemeOut: {
             /** Accent */
             accent: string;
+            /**
+             * Body Font
+             * @default
+             */
+            body_font: ("onest" | "inter" | "manrope" | "golos" | "cormorant" | "eb-garamond" | "lora" | "pt-serif" | "old-standard" | "jetbrains" | "ibm-plex-mono") | "";
+            /**
+             * Heading Font
+             * @default
+             */
+            heading_font: ("onest" | "inter" | "manrope" | "golos" | "unbounded" | "russo" | "dela-gothic" | "tektur" | "cormorant" | "playfair" | "eb-garamond" | "lora" | "pt-serif" | "old-standard" | "yeseva" | "prata" | "ruslan" | "monomakh" | "rubik-glitch" | "rubik-wet-paint" | "caveat" | "marck" | "jetbrains" | "ibm-plex-mono" | "press-start" | "pixelify" | "poiret") | "";
             /** Second */
             second: string | null;
+            /**
+             * Style
+             * @default neon
+             * @enum {string}
+             */
+            style: "neon" | "gothic";
         };
         /** TitleIn */
         TitleIn: {
@@ -2160,6 +2239,10 @@ export interface components {
         UpdateSiteIn: {
             /** Accent */
             accent?: string | null;
+            /** Body Font */
+            body_font?: ("onest" | "inter" | "manrope" | "golos" | "cormorant" | "eb-garamond" | "lora" | "pt-serif" | "old-standard" | "jetbrains" | "ibm-plex-mono") | "" | null;
+            /** Heading Font */
+            heading_font?: ("onest" | "inter" | "manrope" | "golos" | "unbounded" | "russo" | "dela-gothic" | "tektur" | "cormorant" | "playfair" | "eb-garamond" | "lora" | "pt-serif" | "old-standard" | "yeseva" | "prata" | "ruslan" | "monomakh" | "rubik-glitch" | "rubik-wet-paint" | "caveat" | "marck" | "jetbrains" | "ibm-plex-mono" | "press-start" | "pixelify" | "poiret") | "" | null;
             /** Second */
             second?: string | null;
             /** Seo Description */
@@ -2168,6 +2251,8 @@ export interface components {
             seo_title?: string | null;
             /** Slug */
             slug?: string | null;
+            /** Style */
+            style?: ("neon" | "gothic") | null;
             /** Title */
             title?: string | null;
         };

@@ -1200,7 +1200,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "hero" | "facts" | "experience" | "projects" | "interests" | "stack" | "contacts" | "resume" | "profile" | "now" | "shelf" | "characters" | "top" | "challenge" | "quotes" | "playlist" | "posts" | "video" | "carousel";
+            type: "hero" | "facts" | "experience" | "projects" | "interests" | "stack" | "contacts" | "resume" | "profile" | "now" | "shelf" | "characters" | "top" | "challenge" | "quotes" | "playlist" | "posts" | "video" | "carousel" | "collage";
             /**
              * Version
              * @default 1

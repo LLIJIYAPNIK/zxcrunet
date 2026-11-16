@@ -350,3 +350,77 @@ def test_video_background_takes_a_clip() -> None:
     assert hero["appearance"]["video"]["url"] == VIDEO_FILE["url"]
     with pytest.raises(ValidationError):
         block("hero", HERO, appearance={"background": "video", "video": PICTURE})
+
+
+def tile(tile_id: str, kind: str = "text", **extra: Any) -> dict[str, Any]:
+    return {"id": tile_id, "kind": kind, "desktop": {"x": 0, "y": 0, "w": 6, "h": 3}, **extra}
+
+
+def test_collage_places_tiles_on_both_grids() -> None:
+    [collage] = validate_blocks(
+        [
+            block(
+                "collage",
+                {
+                    "tiles": [
+                        tile("a", "image", media=PICTURE, layer=3),
+                        tile("b", text="Тень и пламя", text_style="heading"),
+                        tile(
+                            "c",
+                            "button",
+                            link={"label": "Написать", "url": "https://t.me/anna"},
+                            desktop={"x": 8, "y": 4, "w": 4, "h": 1},
+                            phone={"x": 0, "y": 9, "w": 4, "h": 1},
+                        ),
+                        tile("d", "embed", embed={"provider": "youtube", "id": "dQw4w9WgXcQ"}),
+                        tile("e", "video", media=VIDEO_FILE),
+                    ],
+                    "phone": "custom",
+                },
+            )
+        ],
+        "personal",
+    )
+
+    tiles = collage["settings"]["tiles"]
+    assert [t["kind"] for t in tiles] == ["image", "text", "button", "embed", "video"]
+    assert tiles[0]["layer"] == 3
+    assert tiles[2]["phone"] == {"x": 0, "y": 9, "w": 4, "h": 1}
+    assert media_ids([collage]) == {UUID(PICTURE["id"]), UUID(VIDEO_FILE["id"])}
+
+
+@pytest.mark.parametrize(
+    "tiles",
+    [
+        [tile("a", desktop={"x": 8, "y": 0, "w": 6, "h": 2})],
+        [tile("a", phone={"x": 2, "y": 0, "w": 3, "h": 2})],
+        [tile("a"), tile("a")],
+        [tile("A")],
+        [tile("a", "sticker")],
+        [tile("a", desktop={"x": 0, "y": 0, "w": 6, "h": 30})],
+        [tile("a", "button", link={"label": "x", "url": "javascript:alert(1)"})],
+        [tile(f"t{i}") for i in range(25)],
+    ],
+)
+def test_collage_rejects_bad_tiles(tiles: list[dict[str, Any]]) -> None:
+    with pytest.raises(InvalidBlockError):
+        validate_blocks([block("collage", {"tiles": tiles})])
+
+
+def test_hero_layouts() -> None:
+    [card, collage, full] = validate_blocks(
+        [
+            block("hero", HERO),
+            block("hero", {**HERO, "layout": "collage", "media": [PICTURE, VIDEO_FILE]}),
+            block(
+                "hero",
+                {**HERO, "layout": "fullscreen", "background": VIDEO_FILE, "align": "center"},
+            ),
+        ]
+    )
+
+    assert card["settings"]["layout"] == "card"
+    assert len(collage["settings"]["media"]) == 2
+    assert full["settings"]["dim"] == 45
+    with pytest.raises(InvalidBlockError):
+        validate_blocks([block("hero", {**HERO, "media": [PICTURE] * 7})])

@@ -14,6 +14,7 @@ from pydantic import (
     StringConstraints,
     ValidationError,
     field_validator,
+    model_validator,
 )
 
 from zxcrunet.shared.application.content import (
@@ -110,6 +111,14 @@ class HeroSettings(_Model):
     avatar: MediaRef | None = None
     chips: list[Short] = Field(default_factory=list, max_length=6)
     pattern: Pattern = "rings"
+    #: `card`: text and the profile card; `collage`: text and up to six pictures or clips;
+    #: `fullscreen`: text over a picture or clip that fills the first screen.
+    layout: Literal["card", "collage", "fullscreen"] = "card"
+    media: list[MediaRef] = Field(default_factory=list, max_length=6)
+    background: MediaRef | None = None
+    #: Darkening over the fullscreen background, in percent.
+    dim: int = Field(default=45, ge=0, le=90)
+    align: Literal["left", "center"] = "left"
 
 
 class Fact(_Model):
@@ -338,6 +347,78 @@ class CarouselSettings(_Model):
     pause_on_hover: bool = True
 
 
+# --- collage: tiles on a 12-column grid (4 columns on phones) ------------------
+
+DESKTOP_COLUMNS = 12
+PHONE_COLUMNS = 4
+MAX_ROW = 60
+MAX_SPAN_ROWS = 24
+
+
+class Place(_Model):
+    """Cell coordinates: `x`/`y` from the top-left corner, `w`×`h` cells."""
+
+    x: int = Field(ge=0, lt=DESKTOP_COLUMNS)
+    y: int = Field(ge=0, lt=MAX_ROW)
+    w: int = Field(ge=1, le=DESKTOP_COLUMNS)
+    h: int = Field(ge=1, le=MAX_SPAN_ROWS)
+
+
+class CollageTile(_Model):
+    id: Annotated[str, StringConstraints(pattern=r"^[a-z0-9]{1,16}$")]
+    kind: Literal["image", "video", "embed", "text", "button"]
+    #: `image`: a picture; `video`: an uploaded clip (always a silent loop).
+    media: MediaRef | None = None
+    embed: Embed | None = None
+    text: Text = ""
+    text_style: Literal["heading", "body", "quote", "label"] = "body"
+    align: Literal["left", "center", "right"] = "left"
+    #: `button`: the button itself; `image`/`video`: where a click leads.
+    link: Link | None = None
+    #: Behind the text of a text or button tile.
+    fill: Literal["none", "surface", "accent"] = "none"
+    fit: Literal["cover", "contain"] = "cover"
+    rounded: bool = True
+    #: Read by screen readers.
+    alt: Short = ""
+    desktop: Place
+    #: Ignored while the collage lays itself out on phones (`CollageSettings.phone`).
+    phone: Place | None = None
+    #: Higher layers cover lower ones where tiles overlap.
+    layer: int = Field(default=1, ge=0, le=10)
+
+    @model_validator(mode="after")
+    def _fits(self) -> "CollageTile":
+        if self.desktop.x + self.desktop.w > DESKTOP_COLUMNS:
+            msg = "tile is wider than the grid"
+            raise ValueError(msg)
+        if self.phone and self.phone.x + self.phone.w > PHONE_COLUMNS:
+            msg = "tile is wider than the phone grid"
+            raise ValueError(msg)
+        return self
+
+
+class CollageSettings(_Model):
+    label: Short = ""
+    title: Line = ""
+    tiles: list[CollageTile] = Field(default_factory=list, max_length=24)
+    #: Height of one grid row.
+    cell: Literal["s", "m", "l"] = "m"
+    gap: Literal["none", "s", "m"] = "s"
+    #: `auto`: tiles stack in reading order; `custom`: each tile's `phone` place.
+    phone: Literal["auto", "custom"] = "auto"
+    #: Stretch past the content width to the screen edges.
+    bleed: bool = False
+
+    @field_validator("tiles")
+    @classmethod
+    def _unique_ids(cls, tiles: list[CollageTile]) -> list[CollageTile]:
+        if len({t.id for t in tiles}) != len(tiles):
+            msg = "tile ids must be unique"
+            raise ValueError(msg)
+        return tiles
+
+
 SCHEMAS: dict[str, dict[int, type[_Model]]] = {
     "hero": {1: HeroSettings},
     "facts": {1: FactsSettings},
@@ -358,6 +439,7 @@ SCHEMAS: dict[str, dict[int, type[_Model]]] = {
     "posts": {1: PostsSettings},
     "video": {1: VideoSettings},
     "carousel": {1: CarouselSettings},
+    "collage": {1: CollageSettings},
 }
 
 BlockType = Literal[
@@ -380,6 +462,7 @@ BlockType = Literal[
     "posts",
     "video",
     "carousel",
+    "collage",
 ]
 
 
@@ -403,7 +486,7 @@ def _errors(exc: ValidationError) -> list[dict[str, Any]]:
     ]
 
 
-COMMON_BLOCKS = frozenset({"hero", "interests", "contacts", "video", "carousel"})
+COMMON_BLOCKS = frozenset({"hero", "interests", "contacts", "video", "carousel", "collage"})
 PERSONAL_ONLY = frozenset(
     {"profile", "now", "shelf", "characters", "top", "challenge", "quotes", "playlist", "posts"}
 )

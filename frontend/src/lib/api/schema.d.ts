@@ -1092,7 +1092,7 @@ export interface components {
              * @default none
              * @enum {string}
              */
-            background: "none" | "surface" | "accent" | "color" | "gradient" | "image" | "pattern";
+            background: "none" | "surface" | "accent" | "color" | "gradient" | "image" | "video" | "pattern";
             /**
              * Body Font
              * @default
@@ -1137,6 +1137,7 @@ export interface components {
              * @enum {string}
              */
             space: "none" | "s" | "m" | "l";
+            video?: components["schemas"]["VideoRef"] | null;
         };
         /** AuditOut */
         AuditOut: {
@@ -1199,7 +1200,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "hero" | "facts" | "experience" | "projects" | "interests" | "stack" | "contacts" | "resume" | "profile" | "now" | "shelf" | "characters" | "top" | "challenge" | "quotes" | "playlist" | "posts";
+            type: "hero" | "facts" | "experience" | "projects" | "interests" | "stack" | "contacts" | "resume" | "profile" | "now" | "shelf" | "characters" | "top" | "challenge" | "quotes" | "playlist" | "posts" | "video" | "carousel";
             /**
              * Version
              * @default 1
@@ -1250,7 +1251,7 @@ export interface components {
              * Purpose
              * @enum {string}
              */
-            purpose: "image" | "resume";
+            purpose: "image" | "resume" | "video";
         };
         /** Boss */
         Boss: {
@@ -1318,6 +1319,11 @@ export interface components {
             max_sites: number;
             /** Max Upload Mb */
             max_upload_mb: number;
+            /**
+             * Max Video Mb
+             * @default 15
+             */
+            max_video_mb: number;
             /** Title */
             title: string;
         };
@@ -1578,6 +1584,8 @@ export interface components {
             max_sites: number;
             /** Max Upload Mb */
             max_upload_mb: number;
+            /** Max Video Mb */
+            max_video_mb: number;
             /** Plan */
             plan: string;
             /** Plan Title */
@@ -1601,7 +1609,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "image" | "document";
+            kind: "image" | "document" | "video";
             /** Mime */
             mime: string;
             /** Size */
@@ -1651,6 +1659,11 @@ export interface components {
             max_sites: number;
             /** Max Upload Mb */
             max_upload_mb: number;
+            /**
+             * Max Video Mb
+             * @default 15
+             */
+            max_video_mb: number;
             /** Title */
             title: string;
         };
@@ -1664,6 +1677,8 @@ export interface components {
             max_sites: number;
             /** Max Upload Mb */
             max_upload_mb: number;
+            /** Max Video Mb */
+            max_video_mb: number;
             /** Title */
             title: string;
         };
@@ -2290,6 +2305,23 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /**
+         * VideoRef
+         * @description An uploaded clip (MP4 or WebM).
+         */
+        VideoRef: {
+            /** Height */
+            height?: number | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Url */
+            url: string;
+            /** Width */
+            width?: number | null;
         };
         /** ViewIn */
         ViewIn: {

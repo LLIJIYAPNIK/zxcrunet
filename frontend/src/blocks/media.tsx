@@ -80,7 +80,9 @@ function Video({ id, settings: s }: Props<"video">) {
 }
 
 function CarouselBlock({ id, settings: s, ctx }: Props<"carousel">) {
-  if (!s.items.length) return null;
+  // In the editor preview a frame exists before its file is uploaded.
+  const items = s.items.filter((item) => item.media);
+  if (!items.length) return null;
   const label = s.title || s.label || ctx.siteTitle;
   return (
     <section id={id} className="scroll-mt-20 py-14 @3xl:py-18">
@@ -91,7 +93,7 @@ function CarouselBlock({ id, settings: s, ctx }: Props<"carousel">) {
       )}
       {s.mode === "marquee" ? (
         <Marquee
-          items={s.items}
+          items={items}
           speed={s.speed}
           direction={s.direction}
           height={s.height}
@@ -101,7 +103,7 @@ function CarouselBlock({ id, settings: s, ctx }: Props<"carousel">) {
       ) : (
         <div className={CWRAP}>
           <Slides
-            items={s.items}
+            items={items}
             autoplay={s.autoplay}
             interval={s.interval}
             height={s.height}

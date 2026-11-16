@@ -143,6 +143,13 @@ describe("carousel block", () => {
     expect(screen.getAllByRole("img", { name: "Закат над морем" })).toHaveLength(1);
   });
 
+  it("skips a frame whose file is still being uploaded (editor preview)", () => {
+    const draft = carousel({ items, mode: "marquee" });
+    (draft.settings as { items: unknown[] }).items.push({ alt: "", link: null });
+    render(<Blocks blocks={[draft]} ctx={ctx} />);
+    expect(screen.getAllByRole("img", { name: "Закат над морем" })).toHaveLength(1);
+  });
+
   it("is hidden while empty", () => {
     const { container } = render(<Blocks blocks={[carousel({ title: "Пусто" })]} ctx={ctx} />);
     expect(container).toBeEmptyDOMElement();

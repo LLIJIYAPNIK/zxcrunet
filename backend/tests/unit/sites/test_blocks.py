@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 from typing import Any, get_args
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from pydantic import ValidationError
@@ -258,7 +258,7 @@ def test_appearance_is_stored_only_when_set() -> None:
 @pytest.mark.parametrize(
     "appearance",
     [
-        {"background": "video"},
+        {"background": "hologram"},
         {"color": "red"},
         {"dim": 95},
         {"angle": 400},
@@ -270,3 +270,83 @@ def test_appearance_is_stored_only_when_set() -> None:
 def test_bad_appearance_is_rejected(appearance: dict[str, Any]) -> None:
     with pytest.raises(ValidationError):
         block("hero", HERO, appearance=appearance)
+
+
+VIDEO_FILE = {"id": "0195f3a0-0000-7000-8000-000000000001", "url": "/media/2026/11/a.mp4"}
+PICTURE = {"id": "0195f3a0-0000-7000-8000-000000000002", "url": "/media/2026/11/b.webp"}
+
+
+@pytest.mark.parametrize(
+    "embed",
+    [
+        {"provider": "youtube", "id": "dQw4w9WgXcQ"},
+        {"provider": "vk", "id": "-22822305_456241864", "hash": "a1b2c3d4e5f6"},
+        {"provider": "rutube", "id": "c6cc4d620b1d4338901770a44b3e82f4"},
+    ],
+)
+def test_video_embeds_by_provider_and_id(embed: dict[str, str]) -> None:
+    [video] = validate_blocks([block("video", {"embed": embed})], "personal")
+
+    assert video["settings"]["embed"]["id"] == embed["id"]
+    assert video["settings"]["source"] == "embed"
+
+
+@pytest.mark.parametrize(
+    "embed",
+    [
+        {"provider": "youtube", "id": "https://youtu.be/dQw4w9WgXcQ"},
+        {"provider": "youtube", "id": "dQw4w9WgXc'"},
+        {"provider": "vk", "id": "video-1_2"},
+        {"provider": "rutube", "id": "C6CC4D620B1D4338901770A44B3E82F4"},
+        {"provider": "vimeo", "id": "123"},
+        {"provider": "vk", "id": "-1_2", "hash": "zz"},
+    ],
+)
+def test_video_embeds_reject_anything_but_ids(embed: dict[str, str]) -> None:
+    with pytest.raises(InvalidBlockError):
+        validate_blocks([block("video", {"embed": embed})])
+
+
+def test_uploaded_video_must_be_a_clip() -> None:
+    [video] = validate_blocks(
+        [block("video", {"source": "file", "file": VIDEO_FILE, "mode": "loop", "aspect": "9:16"})]
+    )
+    assert video["settings"]["file"]["url"].endswith(".mp4")
+    assert media_ids([video]) == {UUID(VIDEO_FILE["id"])}
+    with pytest.raises(InvalidBlockError):
+        validate_blocks([block("video", {"source": "file", "file": PICTURE})])
+
+
+def test_carousel_with_pictures_and_clips() -> None:
+    [carousel] = validate_blocks(
+        [
+            block(
+                "carousel",
+                {
+                    "items": [
+                        {"media": PICTURE, "alt": "Закат"},
+                        {"media": VIDEO_FILE, "link": {"label": "", "url": "https://x.example"}},
+                    ],
+                    "mode": "marquee",
+                    "speed": 30,
+                    "direction": "right",
+                },
+            )
+        ],
+        "business",
+    )
+
+    assert carousel["settings"]["autoplay"] is True
+    assert len(carousel["settings"]["items"]) == 2
+    for bad in ({"interval": 1}, {"speed": 500}, {"items": [{"media": PICTURE}] * 31}):
+        with pytest.raises(InvalidBlockError):
+            validate_blocks([block("carousel", bad)])
+
+
+def test_video_background_takes_a_clip() -> None:
+    [hero] = validate_blocks(
+        [block("hero", HERO, appearance={"background": "video", "video": VIDEO_FILE})]
+    )
+    assert hero["appearance"]["video"]["url"] == VIDEO_FILE["url"]
+    with pytest.raises(ValidationError):
+        block("hero", HERO, appearance={"background": "video", "video": PICTURE})

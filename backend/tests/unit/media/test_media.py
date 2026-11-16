@@ -16,9 +16,45 @@ from zxcrunet.media.domain.media import (
     sniff_mime,
 )
 from zxcrunet.media.infrastructure.adapters import LocalFileStorage, PillowImageProcessor
+from zxcrunet.media.infrastructure.video import (
+    TagStrippingVideoCleaner,
+    blank_mp4_metadata,
+    blank_webm_metadata,
+)
 from zxcrunet.plans.application.service import PlanService
 
 PDF = b"%PDF-1.7\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF"
+
+
+def box(kind: bytes, payload: bytes) -> bytes:
+    return (8 + len(payload)).to_bytes(4, "big") + kind + payload
+
+
+#: A tiny MP4: tags with a location in moov/udta and in a track's meta box.
+MP4 = (
+    box(b"ftyp", b"isom\0\0\0\0isomavc1")
+    + box(
+        b"moov",
+        box(b"mvhd", bytes(20))
+        + box(b"udta", box(b"\xa9xyz", b"+55.7558+037.6173/"))
+        + box(b"trak", box(b"tkhd", bytes(8)) + box(b"meta", b"SecretCam")),
+    )
+    + box(b"mdat", b"frames")
+)
+
+
+def ebml(ident: bytes, payload: bytes) -> bytes:
+    return ident + (0x01 << 56 | len(payload)).to_bytes(8, "big") + payload
+
+
+#: A tiny WebM whose segment has an unknown size, as browsers record them.
+WEBM = (
+    ebml(b"\x1a\x45\xdf\xa3", b"\x42\x82\x84webm")
+    + b"\x18\x53\x80\x67\x01\xff\xff\xff\xff\xff\xff\xff"
+    + ebml(b"\x15\x49\xa9\x66", b"info")
+    + ebml(b"\x12\x54\xc3\x67", b"SecretCam +55.7558+037.6173")
+    + ebml(b"\x1f\x43\xb6\x75", b"frames")
+)
 
 
 def png(width: int = 3000, height: int = 1500, *, with_exif: bool = False) -> bytes:
@@ -40,6 +76,11 @@ def png(width: int = 3000, height: int = 1500, *, with_exif: bool = False) -> by
         (b"RIFF\x00\x00\x00\x00WEBPVP8 ", "image/webp"),
         (b"GIF89a....", "image/gif"),
         (PDF, "application/pdf"),
+        (MP4, "video/mp4"),
+        (WEBM, "video/webm"),
+        (box(b"ftyp", b"qt  \0\0\0\0qt  "), None),
+        (box(b"ftyp", b"heic\0\0\0\0mif1heic"), None),
+        (ebml(b"\x1a\x45\xdf\xa3", b"\x42\x82\x88matroska"), None),
         (b"<svg xmlns='http://www.w3.org/2000/svg'/>", None),
         (b"<html><script>", None),
         (b"", None),
@@ -74,8 +115,68 @@ async def test_local_storage_writes_under_root(tmp_path: Path) -> None:
         await storage.save("../outside.txt", b"x", "text/plain")
 
 
+def test_mp4_tags_are_blanked_in_place() -> None:
+    clean = blank_mp4_metadata(MP4)
+
+    assert len(clean) == len(MP4)
+    assert b"55.7558" not in clean
+    assert b"SecretCam" not in clean
+    assert b"udta" not in clean
+    assert clean.count(b"free") == 2
+    assert clean.endswith(box(b"mdat", b"frames"))
+
+
+def test_webm_tags_become_void() -> None:
+    clean = blank_webm_metadata(WEBM)
+
+    assert len(clean) == len(WEBM)
+    assert b"SecretCam" not in clean
+    assert b"\x12\x54\xc3\x67" not in clean
+    assert clean.endswith(ebml(b"\x1f\x43\xb6\x75", b"frames"))
+    assert b"info" in clean
+
+
+@pytest.mark.parametrize("data", [b"", b"\0\0\0\x01moov", MP4[:30], WEBM[:20]])
+def test_broken_videos_are_left_alone(data: bytes) -> None:
+    cleaner = TagStrippingVideoCleaner()
+    assert len(cleaner.strip_metadata(data, "video/mp4")) == len(data)
+    assert len(cleaner.strip_metadata(data, "video/webm")) == len(data)
+
+
 def uploader(f: Fakes) -> UploadMedia:
-    return UploadMedia(f.media, f.storage, f.images, PlanService(f.plans), f.uow, f.clock)
+    return UploadMedia(
+        f.media,
+        f.storage,
+        f.images,
+        TagStrippingVideoCleaner(),
+        PlanService(f.plans),
+        f.uow,
+        f.clock,
+    )
+
+
+async def test_video_is_stored_as_is_without_tags() -> None:
+    f = Fakes()
+
+    media = await uploader(f)(Upload(uuid4(), "free", Purpose.VIDEO, MP4))
+
+    assert (media.kind, media.mime) == (MediaKind.VIDEO, "video/mp4")
+    assert media.key.endswith(f"/{media.id}.mp4")
+    assert b"SecretCam" not in f.storage.files[media.key]
+    with pytest.raises(UnsupportedFileError):
+        await uploader(f)(Upload(uuid4(), "free", Purpose.VIDEO, png(4, 4)))
+    with pytest.raises(UnsupportedFileError):
+        await uploader(f)(Upload(uuid4(), "free", Purpose.IMAGE, MP4))
+
+
+async def test_videos_have_their_own_plan_limit() -> None:
+    padding = bytes(12 * 1024**2)  # over the 10 MB image limit, under 15 MB for video
+    big = MP4 + box(b"free", padding)
+    f = Fakes()
+
+    assert (await uploader(f)(Upload(uuid4(), "free", Purpose.VIDEO, big))).size == len(big)
+    with pytest.raises(FileTooLargeError):
+        await uploader(f)(Upload(uuid4(), "free", Purpose.VIDEO, big + padding))
 
 
 async def test_image_upload_is_stored_as_webp() -> None:

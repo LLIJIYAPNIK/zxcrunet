@@ -4,6 +4,7 @@ from uuid import UUID
 
 from zxcrunet.media.domain.media import (
     ACCEPTED,
+    EXTENSIONS,
     FileTooLargeError,
     MediaFile,
     MediaKind,
@@ -43,6 +44,14 @@ class ImageProcessor(Protocol):
         """
 
 
+class VideoCleaner(Protocol):
+    def strip_metadata(self, data: bytes, mime: str) -> bytes:
+        """Blank out tags (location, device, author) without re-encoding the video.
+
+        The result has the same length and plays the same.
+        """
+
+
 @dataclass(frozen=True, slots=True)
 class Upload:
     owner_id: UUID
@@ -59,6 +68,7 @@ class UploadMedia:
         media: MediaRepository,
         storage: FileStorage,
         images: ImageProcessor,
+        videos: VideoCleaner,
         plans: PlanService,
         uow: UnitOfWork,
         clock: Clock,
@@ -66,15 +76,17 @@ class UploadMedia:
         self._media = media
         self._storage = storage
         self._images = images
+        self._videos = videos
         self._plans = plans
         self._uow = uow
         self._clock = clock
 
-    async def max_bytes(self, plan_code: str) -> int:
-        return (await self._plans.get(plan_code)).max_upload_mb * MB
+    async def max_bytes(self, plan_code: str, purpose: Purpose = Purpose.IMAGE) -> int:
+        plan = await self._plans.get(plan_code)
+        return (plan.max_video_mb if purpose == Purpose.VIDEO else plan.max_upload_mb) * MB
 
     async def __call__(self, cmd: Upload) -> MediaFile:
-        limit = await self.max_bytes(cmd.plan_code)
+        limit = await self.max_bytes(cmd.plan_code, cmd.purpose)
         if len(cmd.data) > limit:
             raise FileTooLargeError("File is too large", {"max_mb": limit // MB})
         mime = sniff_mime(cmd.data)
@@ -96,19 +108,20 @@ class UploadMedia:
                 width=image.width,
                 height=image.height,
             )
-            payload, extension = image.data, "webp"
+            payload = image.data
         else:
+            video = mime.startswith("video/")
+            payload = self._videos.strip_metadata(cmd.data, mime) if video else cmd.data
             media = MediaFile(
                 owner_id=cmd.owner_id,
-                kind=MediaKind.DOCUMENT,
+                kind=MediaKind.VIDEO if video else MediaKind.DOCUMENT,
                 mime=mime,
-                size=len(cmd.data),
+                size=len(payload),
                 key="",
                 created_at=now,
             )
-            payload, extension = cmd.data, "pdf"
 
-        media.key = f"{now:%Y/%m}/{media.id}.{extension}"
+        media.key = f"{now:%Y/%m}/{media.id}.{EXTENSIONS[media.mime]}"
         await self._storage.save(media.key, payload, media.mime)
         await self._media.add(media)
         await self._uow.commit()

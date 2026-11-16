@@ -12,3 +12,4 @@ class PlanModel(Base):
     max_sites: Mapped[int] = mapped_column(Integer)
     max_custom_domains: Mapped[int] = mapped_column(Integer)
     max_upload_mb: Mapped[int] = mapped_column(Integer)
+    max_video_mb: Mapped[int] = mapped_column(Integer, server_default="15")

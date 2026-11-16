@@ -2,7 +2,7 @@
 
 from dataclasses import asdict, dataclass
 
-from zxcrunet.plans.domain.plan import Plan
+from zxcrunet.plans.domain.plan import DEFAULT_VIDEO_MB, Plan
 from zxcrunet.plans.domain.repository import PlanRepository
 from zxcrunet.shared.application.admin import AuditEntry, AuditTrail, Staff
 from zxcrunet.shared.application.clock import Clock
@@ -20,6 +20,7 @@ class PlanFields:
     max_sites: int
     max_custom_domains: int
     max_upload_mb: int
+    max_video_mb: int = DEFAULT_VIDEO_MB
 
 
 class _Admin:
@@ -52,7 +53,12 @@ class ListPlans(_Admin):
 class CreatePlan(_Admin):
     async def __call__(self, staff: Staff, code: str, fields: PlanFields) -> Plan:
         plan = Plan.create(
-            code, fields.title, fields.max_sites, fields.max_custom_domains, fields.max_upload_mb
+            code,
+            fields.title,
+            fields.max_sites,
+            fields.max_custom_domains,
+            fields.max_upload_mb,
+            fields.max_video_mb,
         )
         if await self.plans.get(plan.code) is not None:
             raise PlanExistsError("A plan with this code exists", {"plan": plan.code})
@@ -75,6 +81,7 @@ class UpdatePlan(_Admin):
             fields.max_sites,
             fields.max_custom_domains,
             fields.max_upload_mb,
+            fields.max_video_mb,
         )
         await self.plans.save(plan)
         await self._record(staff, "plan.update", plan, previous=asdict(current))

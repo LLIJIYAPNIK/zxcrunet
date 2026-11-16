@@ -18,7 +18,7 @@ router = APIRouter(prefix="/api/media", tags=["media"], route_class=DishkaRoute)
 class MediaOut(BaseModel):
     id: UUID
     url: str
-    kind: Literal["image", "document"]
+    kind: Literal["image", "document", "video"]
     mime: str
     size: int
     width: int | None
@@ -29,13 +29,13 @@ class MediaOut(BaseModel):
 async def upload(
     request: Request,
     file: Annotated[UploadFile, File()],
-    purpose: Annotated[Literal["image", "resume"], Form()],
+    purpose: Annotated[Literal["image", "resume", "video"], Form()],
     use_case: FromDishka[UploadMedia],
     get_current: FromDishka[GetCurrentUser],
     settings: FromDishka[Settings],
 ) -> MediaOut:
     user = await current_user(request, get_current, settings)
-    limit = await use_case.max_bytes(user.plan_code)
+    limit = await use_case.max_bytes(user.plan_code, Purpose(purpose))
     data = await file.read(limit + 1)  # never read more than the plan allows
     if len(data) > limit:
         raise FileTooLargeError("File is too large", {"max_mb": limit // (1024 * 1024)})

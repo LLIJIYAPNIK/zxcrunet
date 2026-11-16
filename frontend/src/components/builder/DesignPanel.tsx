@@ -46,6 +46,8 @@ function StyleCard({
       type="button"
       role="radio"
       aria-checked={selected}
+      aria-label={info.name}
+      aria-describedby={`style-${style}-text`}
       onClick={onSelect}
       className={cn(
         "group flex flex-col overflow-hidden rounded-md border text-left transition-[border-color,transform] duration-200 ease-neon hover:-translate-y-px",
@@ -70,7 +72,9 @@ function StyleCard({
       </ThemeScope>
       <span className="flex flex-col gap-1 border-t border-line bg-surface p-3">
         <b className="font-medium">{info.name}</b>
-        <span className="text-[13px] leading-snug text-muted">{info.text}</span>
+        <span id={`style-${style}-text`} className="text-[13px] leading-snug text-muted">
+          {info.text}
+        </span>
       </span>
     </button>
   );

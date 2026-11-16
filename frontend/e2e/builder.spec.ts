@@ -161,9 +161,9 @@ test("gothic style, fonts and a section background reach the public card", async
   await saved(page);
 
   await page.getByRole("button", { name: "Дизайн", exact: true }).click();
-  await page.getByRole("radio", { name: /^Готика/ }).click();
+  await page.getByRole("radio", { name: "Готика", exact: true }).click();
   await page.getByRole("button", { name: /Как в стиле: Cormorant/ }).click();
-  await page.getByRole("radio", { name: /^Ruslan Display/ }).click();
+  await page.getByRole("radio", { name: "Ruslan Display", exact: true }).click();
   await saved(page);
 
   const preview = page.getByTestId("builder-preview");

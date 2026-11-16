@@ -57,6 +57,7 @@ export function FontPicker<F extends FontId>({
         type="button"
         role="radio"
         aria-checked={selected}
+        aria-label={name}
         onClick={() => pick(id)}
         className={cn(
           "flex w-full items-baseline justify-between gap-3 rounded-sm px-3 py-2.5 text-left transition-colors",

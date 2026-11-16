@@ -29,3 +29,10 @@ window.matchMedia ??= ((query: string) => ({
 
 // jsdom does not lay out or scroll.
 Element.prototype.scrollTo ??= function scrollTo() {};
+
+class NoResizes {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+globalThis.ResizeObserver ??= NoResizes as unknown as typeof ResizeObserver;

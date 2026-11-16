@@ -27,7 +27,7 @@ type Props<T extends "video" | "carousel"> = {
 };
 
 /** Any link to the video; only the provider and the id it points to are kept. */
-function VideoLinkField({
+export function VideoLinkField({
   value,
   onChange,
 }: {

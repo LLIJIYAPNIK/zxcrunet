@@ -23,6 +23,11 @@ export const SAMPLE_BUSINESS_BLOCKS: AnyBlock[] = [
       avatar: null,
       chips: ["Figma", "UX", "Research"],
       pattern: "rings",
+      layout: "card",
+      media: [],
+      background: null,
+      dim: 45,
+      align: "left",
     },
   },
   {

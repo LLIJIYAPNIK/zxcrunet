@@ -247,3 +247,32 @@
     overflow-x: auto;
   }
 }
+
+/*
+ * Коллаж (blocks/collage.tsx): 4 колонки на телефоне, 12 от 48rem ширины визитки.
+ * Позиции плиток приходят переменными --d* (компьютер) и --p* (телефон).
+ */
+[data-collage] {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: minmax(var(--cell-p), auto);
+  gap: var(--gap);
+}
+
+[data-collage] > [data-tile] {
+  grid-column: var(--px) / span var(--pw);
+  grid-row: var(--py) / span var(--ph);
+  z-index: var(--layer);
+}
+
+@container (min-width: 48rem) {
+  [data-collage] {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-auto-rows: minmax(var(--cell-d), auto);
+  }
+
+  [data-collage] > [data-tile] {
+    grid-column: var(--dx) / span var(--dw);
+    grid-row: var(--dy) / span var(--dh);
+  }
+}

@@ -372,6 +372,9 @@ class CollageTile(_Model):
     embed: Embed | None = None
     text: Text = ""
     text_style: Literal["heading", "body", "quote", "label"] = "body"
+    text_font: FontId | None = None
+    text_size: int | None = Field(default=None, ge=10)
+    text_color: Hex | None = None
     align: Literal["left", "center", "right"] = "left"
     #: `button`: the button itself; `image`/`video`: where a click leads.
     link: Link | None = None

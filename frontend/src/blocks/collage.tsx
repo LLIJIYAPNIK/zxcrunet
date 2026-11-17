@@ -11,6 +11,7 @@ import { ButtonLink } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 import { CELL_PX, phonePlaces } from "@/lib/collage";
 import { PROVIDER_NAMES, embedSrc } from "@/lib/embed";
+import { fontVar } from "@/lib/theme/fonts";
 
 import type { Place, SettingsOf, Tile } from "./schemas";
 import { CWRAP, SectionHead, externalProps, type BlockProps as Props } from "./ui";
@@ -53,6 +54,11 @@ function vars(desktop: Place, phone: Place, layer: number): CSSProperties {
 
 function TileBody({ tile }: { tile: Tile }): ReactNode {
   const fit = tile.fit === "contain" ? "object-contain" : "object-cover";
+  const textStyle: CSSProperties = {
+    ...(tile.text_font ? { fontFamily: `${fontVar(tile.text_font)}, system-ui, sans-serif` } : {}),
+    ...(tile.text_size ? { fontSize: `${tile.text_size}px` } : {}),
+    ...(tile.text_color ? { color: tile.text_color } : {}),
+  };
   switch (tile.kind) {
     case "image":
       return tile.media ? (
@@ -90,11 +96,13 @@ function TileBody({ tile }: { tile: Tile }): ReactNode {
       ) : null;
     case "text":
       return tile.text ? (
-        <p className={cn("whitespace-pre-line", TEXT_STYLE[tile.text_style])}>{tile.text}</p>
+        <p className={cn("whitespace-pre-line", TEXT_STYLE[tile.text_style])} style={textStyle}>
+          {tile.text}
+        </p>
       ) : null;
     case "button":
       return tile.link?.label ? (
-        <ButtonLink href={tile.link.url} arrow>
+        <ButtonLink href={tile.link.url} arrow style={textStyle}>
           {tile.link.label}
         </ButtonLink>
       ) : null;

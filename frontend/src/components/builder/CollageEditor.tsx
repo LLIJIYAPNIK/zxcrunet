@@ -33,8 +33,11 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { Segmented } from "@/components/ui/Segmented";
+import { ColorPicker } from "@/components/theme/ColorPicker";
+import { FontPicker } from "@/components/builder/FontPicker";
 import { ru } from "@/i18n/ru";
 import { cn } from "@/lib/cn";
+import { FONT_IDS } from "@/lib/theme/fonts";
 import {
   CELL_PX,
   COLUMNS,
@@ -69,6 +72,9 @@ function blankTile(kind: TileKind, desktop: Place, phone: Place | null): Tile {
     embed: null,
     text: "",
     text_style: kind === "text" ? "heading" : "body",
+    text_font: null,
+    text_size: null,
+    text_color: null,
     align: "left",
     link: null,
     fill: "none",
@@ -294,6 +300,7 @@ function TileFields({
   onPlace: (place: Place) => void;
   onRemove: () => void;
 }) {
+  const [colorOpen, setColorOpen] = useState(false);
   const set = (patch: Partial<Tile>) => onChange({ ...tile, ...patch });
   const media = tile.kind === "image" || tile.kind === "video";
   const textual = tile.kind === "text" || tile.kind === "button";
@@ -362,6 +369,61 @@ function TileFields({
       )}
       {tile.kind === "button" && (
         <LinkField label={t.button} value={tile.link} onChange={(link) => set({ link })} />
+      )}
+      {textual && (
+        <>
+          <FontPicker
+            label={t.font}
+            value={tile.text_font ?? ""}
+            onChange={(text_font) => set({ text_font: text_font || null })}
+            fonts={FONT_IDS}
+            inheritLabel={t.fontDefault}
+            inheritFont="onest"
+          />
+          <NumberField
+            label={t.fontSize}
+            value={tile.text_size}
+            min={10}
+            fallback={null}
+            hint={t.fontSizeHint}
+            onChange={(text_size) => set({ text_size })}
+          />
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-3">
+              <button
+                type="button"
+                aria-expanded={colorOpen}
+                onClick={() => setColorOpen((open) => !open)}
+                className="flex h-12 min-w-0 flex-1 items-center gap-3 rounded-md border border-line-2 bg-surface px-3 text-left hover:border-accent"
+              >
+                <span
+                  aria-hidden="true"
+                  className="size-6 shrink-0 rounded-full border border-line-2"
+                  style={{ backgroundColor: tile.text_color ?? "var(--ink-2)" }}
+                />
+                <span className="truncate text-[15px] text-ink-2">
+                  {tile.text_color ?? t.colorDefault}
+                </span>
+              </button>
+              {tile.text_color && (
+                <button
+                  type="button"
+                  onClick={() => set({ text_color: null })}
+                  className="text-sm text-muted hover:text-ink"
+                >
+                  {t.colorReset}
+                </button>
+              )}
+            </div>
+            {colorOpen && (
+              <ColorPicker
+                label={t.color}
+                value={tile.text_color ?? "#ffffff"}
+                onChange={(text_color) => set({ text_color })}
+              />
+            )}
+          </div>
+        </>
       )}
       {(media || tile.kind === "embed") && (
         <TextField

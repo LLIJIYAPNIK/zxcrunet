@@ -511,7 +511,7 @@ export function NumberField<N extends number | null>({
   value: N;
   onChange: (value: N) => void;
   min: number;
-  max: number;
+  max?: number;
   fallback: N;
   hint?: string;
 }) {

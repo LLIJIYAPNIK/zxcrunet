@@ -325,6 +325,15 @@ export const tileSchema = z
     embed: embedSchema.nullable().default(null),
     text: text.default(""),
     text_style: z.enum(["heading", "body", "quote", "label"]).default("body"),
+    text_font: z.enum(FONT_IDS).nullable().default(null),
+    text_size: z.number().int().min(10).nullable().default(null),
+    text_color: z
+      .string()
+      .trim()
+      .regex(/^#[0-9a-fA-F]{6}$/, "Цвет в формате #rrggbb")
+      .transform((v) => v.toLowerCase())
+      .nullable()
+      .default(null),
     align: z.enum(["left", "center", "right"]).default("left"),
     link: linkSchema.nullable().default(null),
     fill: z.enum(["none", "surface", "accent"]).default("none"),

@@ -44,7 +44,7 @@ export function bottom(places: readonly Place[]): number {
 }
 
 const isMedia = (tile: Tile) =>
-  tile.kind === "image" || tile.kind === "video" || tile.kind === "embed";
+  tile.kind === "image" || tile.kind === "video" || tile.kind === "embed" || tile.kind === "audio";
 
 /**
  * The phone layout when the owner has not drawn one: tiles in reading order (top to

@@ -94,6 +94,56 @@ function TileBody({ tile }: { tile: Tile }): ReactNode {
           className="absolute inset-0 size-full border-0"
         />
       ) : null;
+    case "audio":
+      return tile.audio_url ? (
+        <div
+          className="flex size-full min-h-0 flex-col justify-center gap-3 p-4 @3xl:p-6"
+          style={{ color: tile.audio_color, backgroundColor: tile.audio_background }}
+        >
+          <div className="flex min-w-0 items-center gap-3">
+            <span
+              aria-hidden="true"
+              className={cn(
+                "grid size-10 shrink-0 place-items-center rounded-full border border-current/40",
+                tile.audio_animation === "vinyl" && "animate-spin [animation-duration:6s]",
+              )}
+            >
+              <span
+                className={cn(
+                  "size-2 rounded-full bg-current",
+                  tile.audio_animation === "equalizer" && "animate-pulse",
+                )}
+              />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-medium text-ink" style={{ color: tile.audio_color }}>
+                {tile.audio_title || "Без названия"}
+              </p>
+              <p className="truncate text-sm opacity-70">{tile.audio_artist}</p>
+            </div>
+          </div>
+          <audio
+            controls
+            preload="none"
+            src={tile.audio_url}
+            className="h-9 w-full"
+            aria-label={
+              [tile.audio_title, tile.audio_artist].filter(Boolean).join(" — ") || "Аудиоплеер"
+            }
+          />
+          <span
+            aria-hidden="true"
+            className={cn(
+              "h-1 rounded-full bg-current/25",
+              tile.audio_progress === "wave" && "animate-pulse",
+              tile.audio_progress === "segments" &&
+                "[background-image:repeating-linear-gradient(90deg,currentColor_0_4px,transparent_4px_7px)]",
+            )}
+          />
+        </div>
+      ) : (
+        <span className="p-4 text-sm opacity-60">Добавьте ссылку на аудиофайл</span>
+      );
     case "text":
       return tile.text ? (
         <p className={cn("whitespace-pre-line", TEXT_STYLE[tile.text_style])} style={textStyle}>
@@ -124,12 +174,14 @@ export function CollageTile({
     "group/tile relative min-w-0",
     media
       ? cn("overflow-hidden bg-raised", tile.rounded && "rounded-lg")
-      : cn(
-          "flex flex-col justify-center",
-          ALIGN[tile.align],
-          FILL[tile.fill],
-          tile.rounded && tile.fill !== "none" && "rounded-lg",
-        ),
+      : tile.kind === "audio"
+        ? cn("overflow-hidden", tile.rounded && "rounded-lg")
+        : cn(
+            "flex flex-col justify-center",
+            ALIGN[tile.align],
+            FILL[tile.fill],
+            tile.rounded && tile.fill !== "none" && "rounded-lg",
+          ),
   );
   const style = vars(desktop, phone, tile.layer);
   if (media && tile.link && tile.kind !== "embed") {

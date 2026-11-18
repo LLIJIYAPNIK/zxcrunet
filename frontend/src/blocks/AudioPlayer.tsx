@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 
 import { Icon } from "@/components/ui/Icon";
 import { cn } from "@/lib/cn";
@@ -21,7 +21,7 @@ const WAVE = [
 ];
 
 function timeLabel(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
+  if (!Number.isFinite(seconds) || seconds < 0) return "--:--";
   const minutes = Math.floor(seconds / 60);
   const remainder = Math.floor(seconds % 60)
     .toString()
@@ -44,6 +44,24 @@ export function AudioPlayer({
   const [duration, setDuration] = useState(0);
   const played = duration > 0 ? Math.min(1, current / duration) : 0;
 
+  const syncDuration = useCallback((element: HTMLAudioElement) => {
+    let next = element.duration;
+    if (!Number.isFinite(next) && element.seekable.length > 0) {
+      next = element.seekable.end(element.seekable.length - 1);
+    }
+    if (Number.isFinite(next) && next > 0) setDuration(next);
+  }, []);
+
+  useEffect(() => {
+    const element = audio.current;
+    if (!element) return;
+    const update = () => syncDuration(element);
+    update();
+    const events = ["loadedmetadata", "durationchange", "progress", "canplay"] as const;
+    events.forEach((name) => element.addEventListener(name, update));
+    return () => events.forEach((name) => element.removeEventListener(name, update));
+  }, [src, syncDuration]);
+
   function toggle() {
     const element = audio.current;
     if (!element) return;
@@ -56,7 +74,11 @@ export function AudioPlayer({
 
   function seek(value: number) {
     if (!audio.current || !Number.isFinite(duration)) return;
-    audio.current.currentTime = value;
+    try {
+      audio.current.currentTime = value;
+    } catch {
+      return;
+    }
     setCurrent(value);
   }
 
@@ -74,8 +96,11 @@ export function AudioPlayer({
         onPause={() => setPlaying(false)}
         onEnded={() => setPlaying(false)}
         onTimeUpdate={(event) => setCurrent(event.currentTarget.currentTime)}
-        onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)}
-        onDurationChange={(event) => setDuration(event.currentTarget.duration)}
+        onLoadedMetadata={(event) => syncDuration(event.currentTarget)}
+        onDurationChange={(event) => syncDuration(event.currentTarget)}
+        onLoadedData={(event) => syncDuration(event.currentTarget)}
+        onProgress={(event) => syncDuration(event.currentTarget)}
+        onCanPlay={(event) => syncDuration(event.currentTarget)}
       />
 
       <div className="flex min-w-0 items-center gap-3">
@@ -177,7 +202,7 @@ export function AudioPlayer({
             aria-label="Позиция воспроизведения"
             aria-valuetext={`${timeLabel(current)} из ${timeLabel(duration)}`}
             style={{ "--player-accent": color } as CSSProperties}
-            className="absolute inset-0 h-full w-full cursor-pointer appearance-none bg-transparent opacity-0 focus-visible:opacity-100 focus-visible:outline-none [&::-webkit-slider-runnable-track]:h-1 [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:-mt-1 [&::-webkit-slider-thumb]:size-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--player-accent)] [&::-moz-range-track]:h-1 [&::-moz-range-track]:bg-transparent [&::-moz-range-thumb]:size-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-[var(--player-accent)]"
+            className="absolute inset-0 z-10 h-full w-full cursor-pointer touch-pan-x appearance-none bg-transparent opacity-0 focus-visible:opacity-100 focus-visible:outline-none [&::-webkit-slider-runnable-track]:h-1 [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:-mt-1 [&::-webkit-slider-thumb]:size-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--player-accent)] [&::-moz-range-track]:h-1 [&::-moz-range-track]:bg-transparent [&::-moz-range-thumb]:size-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-[var(--player-accent)]"
           />
         </div>
         <span className="w-8">{timeLabel(duration)}</span>

@@ -366,10 +366,19 @@ class Place(_Model):
 
 class CollageTile(_Model):
     id: Annotated[str, StringConstraints(pattern=r"^[a-z0-9]{1,16}$")]
-    kind: Literal["image", "video", "embed", "text", "button"]
+    kind: Literal["image", "video", "embed", "audio", "text", "button"]
     #: `image`: a picture; `video`: an uploaded clip (always a silent loop).
     media: MediaRef | None = None
     embed: Embed | None = None
+    audio_url: Annotated[str, StringConstraints(strip_whitespace=True, max_length=500)] | None = (
+        None
+    )
+    audio_title: Short = ""
+    audio_artist: Short = ""
+    audio_animation: Literal["none", "equalizer", "vinyl"] = "equalizer"
+    audio_progress: Literal["line", "wave", "segments"] = "line"
+    audio_color: Hex = "#b8ff3b"
+    audio_background: Hex = "#171a20"
     text: Text = ""
     text_style: Literal["heading", "body", "quote", "label"] = "body"
     text_font: FontId | None = None
@@ -389,6 +398,13 @@ class CollageTile(_Model):
     phone: Place | None = None
     #: Higher layers cover lower ones where tiles overlap.
     layer: int = Field(default=1, ge=0, le=10)
+
+    @field_validator("audio_url")
+    @classmethod
+    def _audio_url_safe(cls, value: str | None) -> str | None:
+        if value is not None and not value.startswith(("https://", "http://")):
+            raise ValueError("audio URL must use HTTP or HTTPS")
+        return value
 
     @model_validator(mode="after")
     def _fits(self) -> "CollageTile":

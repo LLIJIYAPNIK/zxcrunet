@@ -14,6 +14,7 @@ import { PROVIDER_NAMES, embedSrc } from "@/lib/embed";
 import { fontVar } from "@/lib/theme/fonts";
 
 import type { Place, SettingsOf, Tile } from "./schemas";
+import { AudioPlayer } from "./AudioPlayer";
 import { CWRAP, SectionHead, externalProps, type BlockProps as Props } from "./ui";
 
 const GAP = { none: "0px", s: "12px", m: "24px" } as const;
@@ -94,6 +95,20 @@ function TileBody({ tile }: { tile: Tile }): ReactNode {
           className="absolute inset-0 size-full border-0"
         />
       ) : null;
+    case "audio":
+      return tile.audio_file?.url || tile.audio_url ? (
+        <AudioPlayer
+          src={tile.audio_file?.url ?? tile.audio_url ?? ""}
+          title={tile.audio_title}
+          artist={tile.audio_artist}
+          color={tile.audio_color}
+          background={tile.audio_background}
+          animation={tile.audio_animation}
+          progressStyle={tile.audio_progress}
+        />
+      ) : (
+        <span className="p-4 text-sm opacity-60">Добавьте ссылку на аудиофайл</span>
+      );
     case "text":
       return tile.text ? (
         <p className={cn("whitespace-pre-line", TEXT_STYLE[tile.text_style])} style={textStyle}>
@@ -124,12 +139,14 @@ export function CollageTile({
     "group/tile relative min-w-0",
     media
       ? cn("overflow-hidden bg-raised", tile.rounded && "rounded-lg")
-      : cn(
-          "flex flex-col justify-center",
-          ALIGN[tile.align],
-          FILL[tile.fill],
-          tile.rounded && tile.fill !== "none" && "rounded-lg",
-        ),
+      : tile.kind === "audio"
+        ? cn("overflow-hidden", tile.rounded && "rounded-lg")
+        : cn(
+            "flex flex-col justify-center",
+            ALIGN[tile.align],
+            FILL[tile.fill],
+            tile.rounded && tile.fill !== "none" && "rounded-lg",
+          ),
   );
   const style = vars(desktop, phone, tile.layer);
   if (media && tile.link && tile.kind !== "embed") {

@@ -314,7 +314,7 @@ const placeSchema = z.object({
 });
 export type Place = z.infer<typeof placeSchema>;
 
-export const TILE_KINDS = ["image", "video", "embed", "text", "button"] as const;
+export const TILE_KINDS = ["image", "video", "embed", "audio", "text", "button"] as const;
 export type TileKind = (typeof TILE_KINDS)[number];
 
 export const tileSchema = z
@@ -323,6 +323,26 @@ export const tileSchema = z
     kind: z.enum(TILE_KINDS),
     media: mediaRefSchema.nullable().default(null),
     embed: embedSchema.nullable().default(null),
+    audio_url: z
+      .string()
+      .trim()
+      .max(500)
+      .regex(/^https?:\/\/[^\s<>"']+$/i)
+      .nullable()
+      .default(null),
+    audio_file: mediaRefSchema.nullable().default(null),
+    audio_title: short.default(""),
+    audio_artist: short.default(""),
+    audio_animation: z.enum(["none", "equalizer", "vinyl"]).default("equalizer"),
+    audio_progress: z.enum(["line", "wave", "segments"]).default("line"),
+    audio_color: z
+      .string()
+      .regex(/^#[0-9a-fA-F]{6}$/)
+      .default("#b8ff3b"),
+    audio_background: z
+      .string()
+      .regex(/^#[0-9a-fA-F]{6}$/)
+      .default("#171a20"),
     text: text.default(""),
     text_style: z.enum(["heading", "body", "quote", "label"]).default("body"),
     text_font: z.enum(FONT_IDS).nullable().default(null),

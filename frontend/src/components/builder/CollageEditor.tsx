@@ -60,6 +60,7 @@ const NEW_SIZE: Record<TileKind, { w: number; h: number }> = {
   image: { w: 6, h: 4 },
   video: { w: 6, h: 4 },
   embed: { w: 8, h: 5 },
+  audio: { w: 5, h: 2 },
   text: { w: 6, h: 2 },
   button: { w: 3, h: 1 },
 };
@@ -70,6 +71,14 @@ function blankTile(kind: TileKind, desktop: Place, phone: Place | null): Tile {
     kind,
     media: null,
     embed: null,
+    audio_url: null,
+    audio_file: null,
+    audio_title: "",
+    audio_artist: "",
+    audio_animation: "equalizer",
+    audio_progress: "line",
+    audio_color: "#b8ff3b",
+    audio_background: "#171a20",
     text: "",
     text_style: kind === "text" ? "heading" : "body",
     text_font: null,
@@ -103,11 +112,13 @@ function Thumb({ tile }: { tile: Tile }) {
   const text =
     tile.kind === "text"
       ? tile.text
-      : tile.kind === "button"
-        ? tile.link?.label
-        : tile.kind === "embed" && tile.embed
-          ? t.kinds.embed
-          : "";
+      : tile.kind === "audio"
+        ? tile.audio_title || t.kinds.audio
+        : tile.kind === "button"
+          ? tile.link?.label
+          : tile.kind === "embed" && tile.embed
+            ? t.kinds.embed
+            : "";
   return (
     <span className="flex size-full flex-col justify-center gap-0.5 overflow-hidden p-1.5 text-[11px] leading-tight">
       <span className="font-medium text-ink-2">{t.kinds[tile.kind]}</span>
@@ -346,6 +357,64 @@ function TileFields({
       )}
       {tile.kind === "embed" && (
         <VideoLinkField value={tile.embed} onChange={(embed) => set({ embed })} />
+      )}
+      {tile.kind === "audio" && (
+        <>
+          <MediaField
+            label={t.audioFile}
+            purpose="audio"
+            value={tile.audio_file}
+            onChange={(audio_file) => set({ audio_file, audio_url: null })}
+            hint={t.audioFileHint}
+          />
+          <TextField
+            label={t.audioUrl}
+            value={tile.audio_url ?? ""}
+            max={500}
+            placeholder="https://…/track.mp3"
+            onChange={(audio_url) => set({ audio_url: audio_url.trim() || null, audio_file: null })}
+          />
+          <TextField
+            label={t.audioTitle}
+            value={tile.audio_title}
+            max={80}
+            onChange={(audio_title) => set({ audio_title })}
+          />
+          <TextField
+            label={t.audioArtist}
+            value={tile.audio_artist}
+            max={80}
+            onChange={(audio_artist) => set({ audio_artist })}
+          />
+          <SelectField
+            label={t.audioAnimation}
+            value={tile.audio_animation}
+            options={(["none", "equalizer", "vinyl"] as const).map((v) => ({
+              value: v,
+              label: t.audioAnimations[v],
+            }))}
+            onChange={(audio_animation) => set({ audio_animation })}
+          />
+          <SelectField
+            label={t.audioProgress}
+            value={tile.audio_progress}
+            options={(["line", "wave", "segments"] as const).map((v) => ({
+              value: v,
+              label: t.audioProgresses[v],
+            }))}
+            onChange={(audio_progress) => set({ audio_progress })}
+          />
+          <ColorPicker
+            label={t.audioColor}
+            value={tile.audio_color}
+            onChange={(audio_color) => set({ audio_color })}
+          />
+          <ColorPicker
+            label={t.audioBackground}
+            value={tile.audio_background}
+            onChange={(audio_background) => set({ audio_background })}
+          />
+        </>
       )}
       {tile.kind === "text" && (
         <>

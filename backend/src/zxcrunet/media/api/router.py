@@ -29,7 +29,7 @@ class MediaOut(BaseModel):
 async def upload(
     request: Request,
     file: Annotated[UploadFile, File()],
-    purpose: Annotated[Literal["image", "resume", "video"], Form()],
+    purpose: Annotated[Literal["image", "resume", "video", "audio"], Form()],
     use_case: FromDishka[UploadMedia],
     get_current: FromDishka[GetCurrentUser],
     settings: FromDishka[Settings],

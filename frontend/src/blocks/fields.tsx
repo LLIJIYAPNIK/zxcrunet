@@ -294,10 +294,12 @@ type UploadResult = { id: string; url: string; width: number | null; height: num
 
 const IMAGE_TYPES = "image/jpeg,image/png,image/webp,image/gif";
 const VIDEO_TYPES = "video/mp4,video/webm";
+const AUDIO_TYPES = "audio/mpeg,audio/wav,audio/ogg,audio/flac,audio/mp4,.mp3,.wav,.ogg,.flac,.m4a";
 const ACCEPT = {
   image: IMAGE_TYPES,
   resume: "application/pdf",
   video: VIDEO_TYPES,
+  audio: AUDIO_TYPES,
   visual: `${IMAGE_TYPES},${VIDEO_TYPES}`,
 } as const;
 
@@ -313,7 +315,7 @@ export function MediaField({
   hint,
 }: {
   label: string;
-  purpose: "image" | "resume" | "video" | "visual";
+  purpose: "image" | "resume" | "video" | "audio" | "visual";
   value: MediaRef | null;
   onChange: (value: MediaRef | null) => void;
   hint?: string;
@@ -365,6 +367,10 @@ export function MediaField({
               aria-hidden="true"
               className="size-14 rounded-md border border-line-2 bg-black object-cover"
             />
+          ) : purpose === "audio" ? (
+            <span className="grid size-14 place-items-center rounded-md border border-line-2 bg-raised text-accent">
+              <Icon name="music" size={22} />
+            </span>
           ) : purpose !== "resume" ? (
             <Image
               src={value.url}

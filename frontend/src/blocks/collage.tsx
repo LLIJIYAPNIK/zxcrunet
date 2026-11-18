@@ -14,6 +14,7 @@ import { PROVIDER_NAMES, embedSrc } from "@/lib/embed";
 import { fontVar } from "@/lib/theme/fonts";
 
 import type { Place, SettingsOf, Tile } from "./schemas";
+import { AudioPlayer } from "./AudioPlayer";
 import { CWRAP, SectionHead, externalProps, type BlockProps as Props } from "./ui";
 
 const GAP = { none: "0px", s: "12px", m: "24px" } as const;
@@ -96,51 +97,15 @@ function TileBody({ tile }: { tile: Tile }): ReactNode {
       ) : null;
     case "audio":
       return tile.audio_file?.url || tile.audio_url ? (
-        <div
-          className="flex size-full min-h-0 flex-col justify-center gap-3 p-4 @3xl:p-6"
-          style={{ color: tile.audio_color, backgroundColor: tile.audio_background }}
-        >
-          <div className="flex min-w-0 items-center gap-3">
-            <span
-              aria-hidden="true"
-              className={cn(
-                "grid size-10 shrink-0 place-items-center rounded-full border border-current/40",
-                tile.audio_animation === "vinyl" && "animate-spin [animation-duration:6s]",
-              )}
-            >
-              <span
-                className={cn(
-                  "size-2 rounded-full bg-current",
-                  tile.audio_animation === "equalizer" && "animate-pulse",
-                )}
-              />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-medium text-ink" style={{ color: tile.audio_color }}>
-                {tile.audio_title || "Без названия"}
-              </p>
-              <p className="truncate text-sm opacity-70">{tile.audio_artist}</p>
-            </div>
-          </div>
-          <audio
-            controls
-            preload="none"
-            src={tile.audio_file?.url ?? tile.audio_url ?? undefined}
-            className="h-9 w-full"
-            aria-label={
-              [tile.audio_title, tile.audio_artist].filter(Boolean).join(" — ") || "Аудиоплеер"
-            }
-          />
-          <span
-            aria-hidden="true"
-            className={cn(
-              "h-1 rounded-full bg-current/25",
-              tile.audio_progress === "wave" && "animate-pulse",
-              tile.audio_progress === "segments" &&
-                "[background-image:repeating-linear-gradient(90deg,currentColor_0_4px,transparent_4px_7px)]",
-            )}
-          />
-        </div>
+        <AudioPlayer
+          src={tile.audio_file?.url ?? tile.audio_url ?? ""}
+          title={tile.audio_title}
+          artist={tile.audio_artist}
+          color={tile.audio_color}
+          background={tile.audio_background}
+          animation={tile.audio_animation}
+          progressStyle={tile.audio_progress}
+        />
       ) : (
         <span className="p-4 text-sm opacity-60">Добавьте ссылку на аудиофайл</span>
       );

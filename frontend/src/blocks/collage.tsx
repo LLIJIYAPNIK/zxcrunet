@@ -95,7 +95,7 @@ function TileBody({ tile }: { tile: Tile }): ReactNode {
         />
       ) : null;
     case "audio":
-      return tile.audio_url ? (
+      return tile.audio_file?.url || tile.audio_url ? (
         <div
           className="flex size-full min-h-0 flex-col justify-center gap-3 p-4 @3xl:p-6"
           style={{ color: tile.audio_color, backgroundColor: tile.audio_background }}
@@ -125,7 +125,7 @@ function TileBody({ tile }: { tile: Tile }): ReactNode {
           <audio
             controls
             preload="none"
-            src={tile.audio_url}
+            src={tile.audio_file?.url ?? tile.audio_url ?? undefined}
             className="h-9 w-full"
             aria-label={
               [tile.audio_title, tile.audio_artist].filter(Boolean).join(" — ") || "Аудиоплеер"

@@ -55,6 +55,7 @@ function tile(id: string, kind: Tile["kind"], desktop: Place, extra: Partial<Til
     media: null,
     embed: null,
     audio_url: null,
+    audio_file: null,
     audio_title: "",
     audio_artist: "",
     audio_animation: "equalizer",

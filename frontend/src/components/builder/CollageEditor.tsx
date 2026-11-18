@@ -72,6 +72,7 @@ function blankTile(kind: TileKind, desktop: Place, phone: Place | null): Tile {
     media: null,
     embed: null,
     audio_url: null,
+    audio_file: null,
     audio_title: "",
     audio_artist: "",
     audio_animation: "equalizer",
@@ -359,12 +360,19 @@ function TileFields({
       )}
       {tile.kind === "audio" && (
         <>
+          <MediaField
+            label={t.audioFile}
+            purpose="audio"
+            value={tile.audio_file}
+            onChange={(audio_file) => set({ audio_file, audio_url: null })}
+            hint={t.audioFileHint}
+          />
           <TextField
             label={t.audioUrl}
             value={tile.audio_url ?? ""}
             max={500}
             placeholder="https://…/track.mp3"
-            onChange={(audio_url) => set({ audio_url: audio_url.trim() || null })}
+            onChange={(audio_url) => set({ audio_url: audio_url.trim() || null, audio_file: null })}
           />
           <TextField
             label={t.audioTitle}

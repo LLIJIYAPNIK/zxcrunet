@@ -550,6 +550,8 @@ export const ru = {
       empty: "Пустая плитка",
       tile: "Плитка",
       audioUrl: "Ссылка на аудиофайл",
+      audioFile: "Аудиофайл с устройства",
+      audioFileHint: "MP3, WAV, OGG, FLAC или M4A. Можно загрузить файл или оставить ссылку ниже.",
       audioTitle: "Название трека",
       audioArtist: "Исполнитель",
       audioAnimation: "Анимация",

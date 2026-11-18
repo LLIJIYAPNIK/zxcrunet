@@ -373,6 +373,7 @@ class CollageTile(_Model):
     audio_url: Annotated[str, StringConstraints(strip_whitespace=True, max_length=500)] | None = (
         None
     )
+    audio_file: MediaRef | None = None
     audio_title: Short = ""
     audio_artist: Short = ""
     audio_animation: Literal["none", "equalizer", "vinyl"] = "equalizer"
@@ -402,7 +403,7 @@ class CollageTile(_Model):
     @field_validator("audio_url")
     @classmethod
     def _audio_url_safe(cls, value: str | None) -> str | None:
-        if value is not None and not value.startswith(("https://", "http://")):
+        if value is not None and not value.lower().startswith(("https://", "http://")):
             raise ValueError("audio URL must use HTTP or HTTPS")
         return value
 

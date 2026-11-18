@@ -330,6 +330,7 @@ export const tileSchema = z
       .regex(/^https?:\/\/[^\s<>"']+$/i)
       .nullable()
       .default(null),
+    audio_file: mediaRefSchema.nullable().default(null),
     audio_title: short.default(""),
     audio_artist: short.default(""),
     audio_animation: z.enum(["none", "equalizer", "vinyl"]).default("equalizer"),

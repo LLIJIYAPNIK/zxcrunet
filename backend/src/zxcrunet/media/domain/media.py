@@ -33,6 +33,7 @@ class Purpose(StrEnum):
     RESUME = "resume"
     #: Short clips for players, loops, carousels and section backgrounds.
     VIDEO = "video"
+    AUDIO = "audio"
 
 
 # Magic numbers: the type is decided by the bytes, never by the name or the browser.
@@ -54,9 +55,38 @@ MP4_BRANDS = frozenset(
 EBML_MAGIC = b"\x1a\x45\xdf\xa3"
 #: The Matroska DocType sits in the EBML header, well within the first bytes.
 EBML_HEADER_SCAN = 64
+MPEG_FRAME_PREFIX_BYTES = 2
+MPEG_SYNC_BYTE = 0xFF
+MPEG_FRAME_MASK = 0xE0
+MPEG_FRAME_SYNC = 0xE0
+
+
+def _sniff_audio(data: bytes) -> str | None:
+    if data.startswith(b"ID3") or (
+        len(data) >= MPEG_FRAME_PREFIX_BYTES
+        and data[0] == MPEG_SYNC_BYTE
+        and data[1] & MPEG_FRAME_MASK == MPEG_FRAME_SYNC
+    ):
+        return "audio/mpeg"
+    if data.startswith(b"RIFF") and data[8:12] == b"WAVE":
+        return "audio/wav"
+    if data.startswith(b"OggS"):
+        return "audio/ogg"
+    if data.startswith(b"fLaC"):
+        return "audio/flac"
+    if (
+        len(data) >= RIFF_HEADER
+        and data[4:8] == b"ftyp"
+        and data[8:12] in {b"M4A ", b"M4B ", b"M4P "}
+    ):
+        return "audio/mp4"
+    return None
 
 
 def sniff_mime(data: bytes) -> str | None:
+    audio_mime = _sniff_audio(data)
+    if audio_mime is not None:
+        return audio_mime
     if len(data) >= RIFF_HEADER and data[:4] == b"RIFF" and data[8:12] == b"WEBP":
         return "image/webp"
     if len(data) >= RIFF_HEADER and data[4:8] == b"ftyp":
@@ -73,6 +103,7 @@ ACCEPTED: dict[Purpose, frozenset[str]] = {
     Purpose.IMAGE: frozenset({"image/jpeg", "image/png", "image/gif", "image/webp"}),
     Purpose.RESUME: frozenset({"application/pdf"}),
     Purpose.VIDEO: frozenset({"video/mp4", "video/webm"}),
+    Purpose.AUDIO: frozenset({"audio/mpeg", "audio/wav", "audio/ogg", "audio/flac", "audio/mp4"}),
 }
 
 #: File extension each stored type gets.
@@ -81,6 +112,11 @@ EXTENSIONS: dict[str, str] = {
     "application/pdf": "pdf",
     "video/mp4": "mp4",
     "video/webm": "webm",
+    "audio/mpeg": "mp3",
+    "audio/wav": "wav",
+    "audio/ogg": "ogg",
+    "audio/flac": "flac",
+    "audio/mp4": "m4a",
 }
 
 
